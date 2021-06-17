@@ -7,11 +7,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"os"
 	"regexp"
 	"strings"
 
+	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	homedir "github.com/mitchellh/go-homedir"
 )
 

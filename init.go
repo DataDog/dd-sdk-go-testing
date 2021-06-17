@@ -8,15 +8,15 @@ package dd_sdk_go_testing
 import (
 	"context"
 	"fmt"
-	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
-	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 	"testing"
 
+	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
+	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 

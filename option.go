@@ -6,12 +6,13 @@
 package dd_sdk_go_testing
 
 import (
+	"runtime"
+
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"runtime"
 )
 
 var (
