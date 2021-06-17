@@ -6,6 +6,9 @@
 package constants
 
 const (
-	// SpanTypeTest marks a span as a test execution.
-	SpanTypeTest = "test"
+	// RuntimeName indicates name of the runtime Compiler.
+	RuntimeName = "runtime.name"
+
+	// RuntimeVersion indicates the Go tree's version string
+	RuntimeVersion = "runtime.version"
 )

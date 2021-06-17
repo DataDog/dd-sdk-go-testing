@@ -6,6 +6,6 @@
 package constants
 
 const (
-	// SpanTypeTest marks a span as a test execution.
-	SpanTypeTest = "test"
+	// SpanKind defines the Span kind.
+	SpanKind = "span.kind"
 )
