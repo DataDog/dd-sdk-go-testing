@@ -9,6 +9,7 @@ import (
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"runtime"
 )
@@ -33,6 +34,7 @@ func defaults(cfg *config) {
 	cfg.spanOpts = []ddtrace.StartSpanOption{
 		tracer.SpanType(constants.SpanTypeTest),
 		tracer.Tag(constants.SpanKind, spanKind),
+		tracer.Tag(ext.ManualKeep, true),
 	}
 
 	// Load tags
