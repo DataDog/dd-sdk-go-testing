@@ -50,27 +50,49 @@ func defaults(cfg *config) {
 }
 
 func loadTags() {
-	tags = map[string]string{
-		constants.OSPlatform:     utils.OSName(),
-		constants.OSVersion:      utils.OSVersion(),
-		constants.OSArchitecture: runtime.GOARCH,
-		constants.RuntimeName:    runtime.Compiler,
-		constants.RuntimeVersion: runtime.Version(),
-	}
-	/*
-		tags = ci.Tags()
+	tags = utils.GetProviderTags()
+	tags[constants.OSPlatform] = utils.OSName()
+	tags[constants.OSVersion] = utils.OSVersion()
+	tags[constants.OSArchitecture] = runtime.GOARCH
+	tags[constants.RuntimeName] = runtime.Compiler
+	tags[constants.RuntimeVersion] = runtime.Version()
 
-		// Guess Git metadata from a local Git repository otherwise.
-		if _, ok := tags[ext.GitRepositoryURL]; !ok {
-			tags[ext.GitRepositoryURL] = ext.LocalGitRepositoryURL()
+	gitData, _ := utils.LocalGetGitData()
+
+	// Guess Git metadata from a local Git repository otherwise.
+	if _, ok := tags[constants.GitRepositoryURL]; !ok {
+		tags[constants.GitRepositoryURL] = gitData.RepositoryUrl
+	}
+	if _, ok := tags[constants.GitCommitSHA]; !ok {
+		tags[constants.GitCommitSHA] = gitData.CommitSha
+	}
+	if _, ok := tags[constants.GitBranch]; !ok {
+		tags[constants.GitBranch] = gitData.Branch
+	}
+
+	if tags[constants.GitCommitSHA] == gitData.CommitSha {
+		if _, ok := tags[constants.GitCommitAuthorDate]; !ok {
+			tags[constants.GitCommitAuthorDate] = gitData.AuthorDate.String()
 		}
-		if _, ok := tags[ext.GitCommitSHA]; !ok {
-			tags[ext.GitCommitSHA] = ext.LocalGitCommitSHA()
+		if _, ok := tags[constants.GitCommitAuthorName]; !ok {
+			tags[constants.GitCommitAuthorName] = gitData.AuthorName
 		}
-		if _, ok := tags[ext.GitBranch]; !ok {
-			tags[ext.GitBranch] = ext.LocalGitBranch()
+		if _, ok := tags[constants.GitCommitAuthorEmail]; !ok {
+			tags[constants.GitCommitAuthorEmail] = gitData.AuthorEmail
 		}
-	*/
+		if _, ok := tags[constants.GitCommitCommitterDate]; !ok {
+			tags[constants.GitCommitCommitterDate] = gitData.CommitterDate.String()
+		}
+		if _, ok := tags[constants.GitCommitCommitterName]; !ok {
+			tags[constants.GitCommitCommitterName] = gitData.CommitterName
+		}
+		if _, ok := tags[constants.GitCommitCommitterEmail]; !ok {
+			tags[constants.GitCommitCommitterEmail] = gitData.CommitterEmail
+		}
+		if _, ok := tags[constants.GitCommitMessage]; !ok {
+			tags[constants.GitCommitMessage] = gitData.CommitMessage
+		}
+	}
 }
 
 // WithSpanOptions defines a set of additional ddtrace.StartSpanOption to be added
