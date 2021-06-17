@@ -111,3 +111,10 @@ func WithSkipFrames(skip int) Option {
 		cfg.skip = skip
 	}
 }
+
+// WithIncrementSkipFrame increments how many frames should be skipped for caller by 1.
+func WithIncrementSkipFrame() Option {
+	return func(cfg *config) {
+		cfg.skip = cfg.skip + 1
+	}
+}

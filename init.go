@@ -49,6 +49,7 @@ func Run(m *testing.M, opts ...tracer.StartOption) int {
 // StartTest returns a new span with the given testing.TB interface and options. It uses
 // tracer.StartSpanFromContext function to start the span with automatically detected information.
 func StartTest(tb testing.TB, opts ...Option) (context.Context, FinishFunc) {
+	opts = append(opts, WithIncrementSkipFrame())
 	return StartTestWithContext(context.Background(), tb, opts...)
 }
 
