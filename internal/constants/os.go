@@ -6,6 +6,8 @@
 package constants
 
 const (
+	Unknown = "unknown"
+
 	// OSPlatform indicates name of the operating system.
 	OSPlatform = "os.platform"
 

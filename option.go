@@ -7,6 +7,7 @@ package dd_sdk_go_testing
 
 import (
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
+	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"runtime"
@@ -48,16 +49,14 @@ func defaults(cfg *config) {
 
 func loadTags() {
 	tags = map[string]string{
+		constants.OSPlatform:     utils.OSName(),
+		constants.OSVersion:      utils.OSVersion(),
 		constants.OSArchitecture: runtime.GOARCH,
 		constants.RuntimeName:    runtime.Compiler,
 		constants.RuntimeVersion: runtime.Version(),
 	}
 	/*
 		tags = ci.Tags()
-
-		// CI App: Test configuration facets
-		tags[ext.OSPlatform] = internal.OSName()
-		tags[ext.OSVersion] = internal.OSVersion()
 
 		// Guess Git metadata from a local Git repository otherwise.
 		if _, ok := tags[ext.GitRepositoryURL]; !ok {
