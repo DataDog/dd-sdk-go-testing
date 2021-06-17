@@ -30,6 +30,7 @@ type FinishFunc func()
 
 // Run is a helper function to run a `testing.M` object and gracefully stopping the agent afterwards
 func Run(m *testing.M, opts ...tracer.StartOption) int {
+	loadTags()
 	tracer.Start(opts...)
 	defer tracer.Stop()
 
@@ -79,7 +80,8 @@ func StartTestWithContext(ctx context.Context, tb testing.TB, opts ...Option) (c
 		testOpts = append(testOpts, tracer.Tag(constants.TestType, constants.TestTypeBenchmark))
 	}
 
-	span, ctx := tracer.StartSpanFromContext(ctx, constants.SpanTypeTest, testOpts...)
+	cfg.spanOpts = append(testOpts, cfg.spanOpts...)
+	span, ctx := tracer.StartSpanFromContext(ctx, constants.SpanTypeTest, cfg.spanOpts...)
 
 	return ctx, func() {
 		span.SetTag(ext.Error, tb.Failed())

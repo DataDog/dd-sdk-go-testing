@@ -9,6 +9,7 @@ import (
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"runtime"
 )
 
 var (
@@ -33,29 +34,9 @@ func defaults(cfg *config) {
 		tracer.Tag(constants.SpanKind, spanKind),
 	}
 
-	// Load CI tags
+	// Load tags
 	if tags == nil {
-		/*
-			tags = ci.Tags()
-
-			// CI App: Test configuration facets
-			tags[ext.OSPlatform] = internal.OSName()
-			tags[ext.OSVersion] = internal.OSVersion()
-			tags[ext.OSArchitecture] = runtime.GOARCH
-			tags[ext.RuntimeName] = runtime.Compiler
-			tags[ext.RuntimeVersion] = runtime.Version()
-
-			// Guess Git metadata from a local Git repository otherwise.
-			if _, ok := tags[ext.GitRepositoryURL]; !ok {
-				tags[ext.GitRepositoryURL] = ext.LocalGitRepositoryURL()
-			}
-			if _, ok := tags[ext.GitCommitSHA]; !ok {
-				tags[ext.GitCommitSHA] = ext.LocalGitCommitSHA()
-			}
-			if _, ok := tags[ext.GitBranch]; !ok {
-				tags[ext.GitBranch] = ext.LocalGitBranch()
-			}
-		*/
+		loadTags()
 	}
 
 	for k, v := range tags {
@@ -63,6 +44,32 @@ func defaults(cfg *config) {
 	}
 
 	cfg.finishOpts = []ddtrace.FinishOption{}
+}
+
+func loadTags() {
+	tags = map[string]string{
+		constants.OSArchitecture: runtime.GOARCH,
+		constants.RuntimeName:    runtime.Compiler,
+		constants.RuntimeVersion: runtime.Version(),
+	}
+	/*
+		tags = ci.Tags()
+
+		// CI App: Test configuration facets
+		tags[ext.OSPlatform] = internal.OSName()
+		tags[ext.OSVersion] = internal.OSVersion()
+
+		// Guess Git metadata from a local Git repository otherwise.
+		if _, ok := tags[ext.GitRepositoryURL]; !ok {
+			tags[ext.GitRepositoryURL] = ext.LocalGitRepositoryURL()
+		}
+		if _, ok := tags[ext.GitCommitSHA]; !ok {
+			tags[ext.GitCommitSHA] = ext.LocalGitCommitSHA()
+		}
+		if _, ok := tags[ext.GitBranch]; !ok {
+			tags[ext.GitBranch] = ext.LocalGitBranch()
+		}
+	*/
 }
 
 // WithSpanOptions defines a set of additional ddtrace.StartSpanOption to be added
