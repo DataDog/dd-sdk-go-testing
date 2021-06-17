@@ -46,7 +46,6 @@ func Run(m *testing.M, opts ...tracer.StartOption) int {
 			}
 			opts = append(opts, tracer.WithService(repoUrl))
 		}
-
 	}
 
 	// Initialize tracer
