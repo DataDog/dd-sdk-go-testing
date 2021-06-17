@@ -8,4 +8,10 @@ package constants
 const (
 	// SpanKind defines the Span kind.
 	SpanKind = "span.kind"
+
+	// Origin tag
+	Origin = "_dd.origin"
+
+	// CIAppTestOrigin defines the CIApp test origin value
+	CIAppTestOrigin = "ciapp-test"
 )

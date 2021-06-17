@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"runtime"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -25,12 +27,28 @@ const (
 	testFramework = "golang.org/pkg/testing"
 )
 
+var repoRegex = regexp.MustCompile(`(?m)\/([a-zA-Z0-9\\\-_.]*)$`)
+
 // FinishFunc closes a started span and attaches test status information.
 type FinishFunc func()
 
 // Run is a helper function to run a `testing.M` object and gracefully stopping the tracer afterwards
 func Run(m *testing.M, opts ...tracer.StartOption) int {
+	// Preload all CI and Git tags.
 	loadTags()
+
+	// Check if DD_SERVICE has been set; otherwise we default to repo name.
+	if v := os.Getenv("DD_SERVICE"); v == "" {
+		if repoUrl, ok := tags[constants.GitRepositoryURL]; ok {
+			matches := repoRegex.FindStringSubmatch(repoUrl)
+			if len(matches) > 1 {
+				repoUrl = strings.TrimSuffix(matches[1], ".git")
+			}
+			opts = append(opts, tracer.WithService(repoUrl))
+		}
+	}
+
+	// Initialize tracer
 	tracer.Start(opts...)
 	defer tracer.Stop()
 
@@ -43,6 +61,7 @@ func Run(m *testing.M, opts ...tracer.StartOption) int {
 		os.Exit(1)
 	}()
 
+	// Execute test suite
 	return m.Run()
 }
 
@@ -72,6 +91,7 @@ func StartTestWithContext(ctx context.Context, tb testing.TB, opts ...Option) (c
 		tracer.Tag(constants.TestName, name),
 		tracer.Tag(constants.TestSuite, suite),
 		tracer.Tag(constants.TestFramework, testFramework),
+		tracer.Tag(constants.Origin, constants.CIAppTestOrigin),
 	}
 
 	switch tb.(type) {
