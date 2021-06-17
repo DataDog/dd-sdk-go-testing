@@ -96,7 +96,9 @@ func lookupEnvs(keys ...string) ([]string, bool) {
 func firstEnv(keys ...string) string {
 	for _, key := range keys {
 		if value, ok := os.LookupEnv(key); ok {
-			return value
+			if value != "" {
+				return value
+			}
 		}
 	}
 	return ""
@@ -151,17 +153,17 @@ func extractAzurePipelines() map[string]string {
 func extractBitbucket() map[string]string {
 	tags := map[string]string{}
 	url := fmt.Sprintf("https://bitbucket.org/%s/addon/pipelines/home#!/results/%s", os.Getenv("BITBUCKET_REPO_FULL_NAME"), os.Getenv("BITBUCKET_BUILD_NUMBER"))
-	tags[constants.GitBranch] = os.Getenv("BITBUCKET_BRANCH")
-	tags[constants.GitCommitSHA] = os.Getenv("BITBUCKET_COMMIT")
-	tags[constants.GitRepositoryURL] = os.Getenv("BITBUCKET_GIT_SSH_ORIGIN")
-	tags[constants.GitTag] = os.Getenv("BITBUCKET_TAG")
-	tags[constants.CIJobURL] = url
-	tags[constants.CIPipelineID] = strings.Trim(os.Getenv("BITBUCKET_PIPELINE_UUID"), "{}")
-	tags[constants.CIPipelineName] = os.Getenv("BITBUCKET_REPO_FULL_NAME")
-	tags[constants.CIPipelineNumber] = os.Getenv("BITBUCKET_BUILD_NUMBER")
-	tags[constants.CIPipelineURL] = url
 	tags[constants.CIProviderName] = "bitbucket"
+	tags[constants.GitRepositoryURL] = os.Getenv("BITBUCKET_GIT_SSH_ORIGIN")
+	tags[constants.GitCommitSHA] = os.Getenv("BITBUCKET_COMMIT")
+	tags[constants.GitBranch] = os.Getenv("BITBUCKET_BRANCH")
+	tags[constants.GitTag] = os.Getenv("BITBUCKET_TAG")
 	tags[constants.CIWorkspacePath] = os.Getenv("BITBUCKET_CLONE_DIR")
+	tags[constants.CIPipelineID] = strings.Trim(os.Getenv("BITBUCKET_PIPELINE_UUID"), "{}")
+	tags[constants.CIPipelineNumber] = os.Getenv("BITBUCKET_BUILD_NUMBER")
+	tags[constants.CIPipelineName] = os.Getenv("BITBUCKET_REPO_FULL_NAME")
+	tags[constants.CIPipelineURL] = url
+	tags[constants.CIJobURL] = url
 	return tags
 }
 
@@ -183,17 +185,18 @@ func extractBuildkite() map[string]string {
 
 func extractCircleCI() map[string]string {
 	tags := map[string]string{}
-	tags[constants.GitBranch] = os.Getenv("CIRCLE_BRANCH")
-	tags[constants.GitCommitSHA] = os.Getenv("CIRCLE_SHA1")
+	tags[constants.CIProviderName] = "circleci"
 	tags[constants.GitRepositoryURL] = os.Getenv("CIRCLE_REPOSITORY_URL")
+	tags[constants.GitCommitSHA] = os.Getenv("CIRCLE_SHA1")
 	tags[constants.GitTag] = os.Getenv("CIRCLE_TAG")
+	tags[constants.GitBranch] = os.Getenv("CIRCLE_BRANCH")
+	tags[constants.CIWorkspacePath] = os.Getenv("CIRCLE_WORKING_DIRECTORY")
 	tags[constants.CIPipelineID] = os.Getenv("CIRCLE_WORKFLOW_ID")
 	tags[constants.CIPipelineName] = os.Getenv("CIRCLE_PROJECT_REPONAME")
 	tags[constants.CIPipelineNumber] = os.Getenv("CIRCLE_BUILD_NUM")
-	tags[constants.CIPipelineURL] = os.Getenv("CIRCLE_BUILD_URL")
+	tags[constants.CIPipelineURL] = fmt.Sprintf("https://app.circleci.com/pipelines/workflows/%s", os.Getenv("CIRCLE_WORKFLOW_ID"))
+	tags[constants.CIJobName] = os.Getenv("CIRCLE_JOB")
 	tags[constants.CIJobURL] = os.Getenv("CIRCLE_BUILD_URL")
-	tags[constants.CIProviderName] = "circleci"
-	tags[constants.CIWorkspacePath] = os.Getenv("CIRCLE_WORKING_DIRECTORY")
 	return tags
 }
 
@@ -206,20 +209,20 @@ func extractGithubActions() map[string]string {
 		tag = branchOrTag
 	} else {
 		branch = branchOrTag
-
 	}
 
-	tags[constants.GitBranch] = branch
-	tags[constants.GitCommitSHA] = os.Getenv("GITHUB_SHA")
-	tags[constants.GitRepositoryURL] = fmt.Sprintf("https://github.com/%s.git", os.Getenv("GITHUB_REPOSITORY"))
-	tags[constants.GitTag] = tag
-	tags[constants.CIJobURL] = fmt.Sprintf("https://github.com/%s/commit/%s/checks", os.Getenv("GITHUB_REPOSITORY"), os.Getenv("GITHUB_SHA"))
-	tags[constants.CIPipelineID] = os.Getenv("GITHUB_RUN_ID")
-	tags[constants.CIPipelineName] = os.Getenv("GITHUB_WORKFLOW")
-	tags[constants.CIPipelineNumber] = os.Getenv("GITHUB_RUN_NUMBER")
-	tags[constants.CIPipelineURL] = fmt.Sprintf("https://github.com/%s/commit/%s/checks", os.Getenv("GITHUB_REPOSITORY"), os.Getenv("GITHUB_SHA"))
+	url := fmt.Sprintf("https://github.com/%s/commit/%s/checks", os.Getenv("GITHUB_REPOSITORY"), os.Getenv("GITHUB_SHA"))
 	tags[constants.CIProviderName] = "github"
+	tags[constants.GitRepositoryURL] = fmt.Sprintf("https://github.com/%s.git", os.Getenv("GITHUB_REPOSITORY"))
+	tags[constants.GitCommitSHA] = os.Getenv("GITHUB_SHA")
+	tags[constants.GitBranch] = branch
+	tags[constants.GitTag] = tag
 	tags[constants.CIWorkspacePath] = os.Getenv("GITHUB_WORKSPACE")
+	tags[constants.CIPipelineID] = os.Getenv("GITHUB_RUN_ID")
+	tags[constants.CIPipelineNumber] = os.Getenv("GITHUB_RUN_NUMBER")
+	tags[constants.CIPipelineName] = os.Getenv("GITHUB_WORKFLOW")
+	tags[constants.CIPipelineURL] = url
+	tags[constants.CIJobURL] = url
 	return tags
 }
 
@@ -227,24 +230,29 @@ func extractGitlab() map[string]string {
 	tags := map[string]string{}
 	url := os.Getenv("CI_PIPELINE_URL")
 	url = string(regexp.MustCompile("/-/pipelines/").ReplaceAll([]byte(url), []byte("/pipelines/"))[:])
-	tags[constants.GitBranch] = os.Getenv("CI_COMMIT_BRANCH")
-	tags[constants.GitCommitSHA] = os.Getenv("CI_COMMIT_SHA")
+
+	tags[constants.CIProviderName] = "gitlab"
 	tags[constants.GitRepositoryURL] = os.Getenv("CI_REPOSITORY_URL")
+	tags[constants.GitCommitSHA] = os.Getenv("CI_COMMIT_SHA")
+	tags[constants.GitBranch] = firstEnv("CI_COMMIT_BRANCH", "CI_COMMIT_REF_NAME")
 	tags[constants.GitTag] = os.Getenv("CI_COMMIT_TAG")
-	tags[constants.CIStageName] = os.Getenv("CI_JOB_STAGE")
-	tags[constants.CIJobName] = os.Getenv("CI_JOB_NAME")
-	tags[constants.CIJobURL] = os.Getenv("CI_JOB_URL")
+	tags[constants.CIWorkspacePath] = os.Getenv("CI_PROJECT_DIR")
 	tags[constants.CIPipelineID] = os.Getenv("CI_PIPELINE_ID")
 	tags[constants.CIPipelineName] = os.Getenv("CI_PROJECT_PATH")
 	tags[constants.CIPipelineNumber] = os.Getenv("CI_PIPELINE_IID")
 	tags[constants.CIPipelineURL] = url
-	tags[constants.CIProviderName] = "gitlab"
-	tags[constants.CIWorkspacePath] = os.Getenv("CI_PROJECT_DIR")
+	tags[constants.CIJobURL] = os.Getenv("CI_JOB_URL")
+	tags[constants.CIJobName] = os.Getenv("CI_JOB_NAME")
+	tags[constants.CIStageName] = os.Getenv("CI_JOB_STAGE")
 	return tags
 }
 
 func extractJenkins() map[string]string {
 	tags := map[string]string{}
+	tags[constants.CIProviderName] = "jenkins"
+	tags[constants.GitRepositoryURL] = os.Getenv("GIT_URL")
+	tags[constants.GitCommitSHA] = os.Getenv("GIT_COMMIT")
+
 	branchOrTag := os.Getenv("GIT_BRANCH")
 	empty := []byte("")
 	name, hasName := os.LookupEnv("JOB_NAME")
@@ -263,14 +271,11 @@ func extractJenkins() map[string]string {
 		name = string(removeVars.ReplaceAll([]byte(name), empty))
 	}
 
-	tags[constants.GitCommitSHA] = os.Getenv("GIT_COMMIT")
-	tags[constants.GitRepositoryURL] = os.Getenv("GIT_URL")
-	tags[constants.CIPipelineID] = os.Getenv("BUILD_TAG")
-	tags[constants.CIPipelineName] = name
-	tags[constants.CIPipelineNumber] = os.Getenv("BUILD_NUMBER")
-	tags[constants.CIPipelineURL] = os.Getenv("BUILD_URL")
-	tags[constants.CIProviderName] = "jenkins"
 	tags[constants.CIWorkspacePath] = os.Getenv("WORKSPACE")
+	tags[constants.CIPipelineID] = os.Getenv("BUILD_TAG")
+	tags[constants.CIPipelineNumber] = os.Getenv("BUILD_NUMBER")
+	tags[constants.CIPipelineName] = name
+	tags[constants.CIPipelineURL] = os.Getenv("BUILD_URL")
 	return tags
 }
 
@@ -282,37 +287,42 @@ func extractTeamcity() map[string]string {
 	tags[constants.CIWorkspacePath] = os.Getenv("BUILD_CHECKOUTDIR")
 	tags[constants.CIPipelineID] = os.Getenv("BUILD_ID")
 	tags[constants.CIPipelineNumber] = os.Getenv("BUILD_NUMBER")
-	tags[constants.CIPipelineURL] = fmt.Sprintf("%s/viewLog.html?buildId=%s", os.Getenv("SERVER_URL"), os.Getenv("SERVER_URL"))
+	tags[constants.CIPipelineURL] = fmt.Sprintf("%s/viewLog.html?buildId=%s", os.Getenv("SERVER_URL"), os.Getenv("BUILD_ID"))
 	return tags
 }
 
 func extractTravis() map[string]string {
 	tags := map[string]string{}
-	tags[constants.GitBranch] = firstEnv("TRAVIS_PULL_REQUEST_BRANCH", "TRAVIS_BRANCH")
-	tags[constants.GitCommitSHA] = os.Getenv("TRAVIS_COMMIT")
-	tags[constants.GitRepositoryURL] = fmt.Sprintf("https://github.com/%s.git", os.Getenv("TRAVIS_REPO_SLUG"))
-	tags[constants.GitTag] = os.Getenv("TRAVIS_TAG")
-	tags[constants.CIJobURL] = os.Getenv("TRAVIS_JOB_WEB_URL")
-	tags[constants.CIPipelineID] = os.Getenv("TRAVIS_BUILD_ID")
-	tags[constants.CIPipelineName] = os.Getenv("TRAVIS_REPO_SLUG")
-	tags[constants.CIPipelineNumber] = os.Getenv("TRAVIS_BUILD_NUMBER")
-	tags[constants.CIPipelineURL] = os.Getenv("TRAVIS_BUILD_WEB_URL")
+	prSlug := os.Getenv("TRAVIS_PULL_REQUEST_SLUG")
+	repoSlug := prSlug
+	if strings.TrimSpace(repoSlug) == "" {
+		repoSlug = os.Getenv("TRAVIS_REPO_SLUG")
+	}
 	tags[constants.CIProviderName] = "travisci"
+	tags[constants.GitRepositoryURL] = fmt.Sprintf("https://github.com/%s.git", repoSlug)
+	tags[constants.GitCommitSHA] = os.Getenv("TRAVIS_COMMIT")
+	tags[constants.GitTag] = os.Getenv("TRAVIS_TAG")
+	tags[constants.GitBranch] = firstEnv("TRAVIS_PULL_REQUEST_BRANCH", "TRAVIS_BRANCH")
 	tags[constants.CIWorkspacePath] = os.Getenv("TRAVIS_BUILD_DIR")
+	tags[constants.CIPipelineID] = os.Getenv("TRAVIS_BUILD_ID")
+	tags[constants.CIPipelineNumber] = os.Getenv("TRAVIS_BUILD_NUMBER")
+	tags[constants.CIPipelineName] = repoSlug
+	tags[constants.CIPipelineURL] = os.Getenv("TRAVIS_BUILD_WEB_URL")
+	tags[constants.CIJobURL] = os.Getenv("TRAVIS_JOB_WEB_URL")
 	return tags
 }
 
 func extractBitrise() map[string]string {
 	tags := map[string]string{}
 	tags[constants.CIProviderName] = "bitrise"
-	tags[constants.CIPipelineID] = os.Getenv("BITRISE_BUILD_SLUG")
-	tags[constants.CIPipelineName] = os.Getenv("BITRISE_APP_TITLE")
-	tags[constants.CIPipelineNumber] = os.Getenv("BITRISE_BUILD_NUMBER")
-	tags[constants.CIPipelineURL] = os.Getenv("BITRISE_BUILD_URL")
-	tags[constants.CIWorkspacePath] = os.Getenv("BITRISE_SOURCE_DIR")
 	tags[constants.GitRepositoryURL] = os.Getenv("GIT_REPOSITORY_URL")
 	tags[constants.GitCommitSHA] = firstEnv("BITRISE_GIT_COMMIT", "GIT_CLONE_COMMIT_HASH")
 	tags[constants.GitBranch] = firstEnv("BITRISEIO_GIT_BRANCH_DEST", "BITRISE_GIT_BRANCH")
 	tags[constants.GitTag] = os.Getenv("BITRISE_GIT_TAG")
+	tags[constants.CIWorkspacePath] = os.Getenv("BITRISE_SOURCE_DIR")
+	tags[constants.CIPipelineID] = os.Getenv("BITRISE_BUILD_SLUG")
+	tags[constants.CIPipelineName] = os.Getenv("BITRISE_APP_TITLE")
+	tags[constants.CIPipelineNumber] = os.Getenv("BITRISE_BUILD_NUMBER")
+	tags[constants.CIPipelineURL] = os.Getenv("BITRISE_BUILD_URL")
 	return tags
 }

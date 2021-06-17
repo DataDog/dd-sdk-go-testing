@@ -61,6 +61,9 @@ func loadTags() {
 	gitData, _ := utils.LocalGetGitData()
 
 	// Guess Git metadata from a local Git repository otherwise.
+	if _, ok := tags[constants.CIWorkspacePath]; !ok {
+		tags[constants.CIWorkspacePath] = gitData.SourceRoot
+	}
 	if _, ok := tags[constants.GitRepositoryURL]; !ok {
 		tags[constants.GitRepositoryURL] = gitData.RepositoryUrl
 	}
