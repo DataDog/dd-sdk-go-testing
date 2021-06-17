@@ -6,7 +6,6 @@
 package utils
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -70,6 +69,5 @@ func LocalGetGitData() (LocalGitData, error) {
 	gitData.CommitterEmail = outArray[6]
 	gitData.CommitMessage = strings.Trim(outArray[7], "\n")
 
-	fmt.Println(gitData)
 	return gitData, nil
 }
