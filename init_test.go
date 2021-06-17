@@ -15,11 +15,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestRun(t *testing.T) {
-	_, finish := StartTest(t)
+	ctx, finish := StartTest(t)
 	defer finish()
 
 	t.Run("sub-test", func(t *testing.T) {
-		_, finish := StartTest(t)
+		_, finish := StartTestWithContext(ctx, t)
 		defer finish()
 	})
 }
