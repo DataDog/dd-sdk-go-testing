@@ -28,7 +28,7 @@ const (
 // FinishFunc closes a started span and attaches test status information.
 type FinishFunc func()
 
-// Run is a helper function to run a `testing.M` object and gracefully stopping the agent afterwards
+// Run is a helper function to run a `testing.M` object and gracefully stopping the tracer afterwards
 func Run(m *testing.M, opts ...tracer.StartOption) int {
 	loadTags()
 	tracer.Start(opts...)
