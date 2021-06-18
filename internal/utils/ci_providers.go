@@ -120,6 +120,9 @@ func extractAppveyor() map[string]string {
 	tags[constants.CIPipelineNumber] = os.Getenv("APPVEYOR_BUILD_NUMBER")
 	tags[constants.CIPipelineURL] = url
 	tags[constants.CIJobURL] = url
+	tags[constants.GitCommitMessage] = os.Getenv("APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED")
+	tags[constants.GitCommitAuthorName] = os.Getenv("APPVEYOR_REPO_COMMIT_AUTHOR")
+	tags[constants.GitCommitAuthorEmail] = os.Getenv("APPVEYOR_REPO_COMMIT_AUTHOR_EMAIL")
 	return tags
 }
 
@@ -147,6 +150,25 @@ func extractAzurePipelines() map[string]string {
 	tags[constants.GitCommitSHA] = firstEnv("SYSTEM_PULLREQUEST_SOURCECOMMITID", "BUILD_SOURCEVERSION")
 	tags[constants.GitBranch] = branch
 	tags[constants.GitTag] = tag
+	tags[constants.GitCommitMessage] = os.Getenv("BUILD_SOURCEVERSIONMESSAGE")
+	tags[constants.GitCommitAuthorName] = os.Getenv("BUILD_REQUESTEDFORID")
+	tags[constants.GitCommitAuthorEmail] = os.Getenv("BUILD_REQUESTEDFOREMAIL")
+	return tags
+}
+
+func extractBitrise() map[string]string {
+	tags := map[string]string{}
+	tags[constants.CIProviderName] = "bitrise"
+	tags[constants.GitRepositoryURL] = os.Getenv("GIT_REPOSITORY_URL")
+	tags[constants.GitCommitSHA] = firstEnv("BITRISE_GIT_COMMIT", "GIT_CLONE_COMMIT_HASH")
+	tags[constants.GitBranch] = firstEnv("BITRISEIO_GIT_BRANCH_DEST", "BITRISE_GIT_BRANCH")
+	tags[constants.GitTag] = os.Getenv("BITRISE_GIT_TAG")
+	tags[constants.CIWorkspacePath] = os.Getenv("BITRISE_SOURCE_DIR")
+	tags[constants.CIPipelineID] = os.Getenv("BITRISE_BUILD_SLUG")
+	tags[constants.CIPipelineName] = os.Getenv("BITRISE_APP_TITLE")
+	tags[constants.CIPipelineNumber] = os.Getenv("BITRISE_BUILD_NUMBER")
+	tags[constants.CIPipelineURL] = os.Getenv("BITRISE_BUILD_URL")
+	tags[constants.GitCommitMessage] = os.Getenv("BITRISE_GIT_MESSAGE")
 	return tags
 }
 
@@ -180,6 +202,9 @@ func extractBuildkite() map[string]string {
 	tags[constants.CIJobURL] = fmt.Sprintf("%s#%s", os.Getenv("BUILDKITE_BUILD_URL"), os.Getenv("BUILDKITE_JOB_ID"))
 	tags[constants.CIProviderName] = "buildkite"
 	tags[constants.CIWorkspacePath] = os.Getenv("BUILDKITE_BUILD_CHECKOUT_PATH")
+	tags[constants.GitCommitMessage] = os.Getenv("BUILDKITE_MESSAGE")
+	tags[constants.GitCommitAuthorName] = os.Getenv("BUILDKITE_BUILD_AUTHOR")
+	tags[constants.GitCommitAuthorEmail] = os.Getenv("BUILDKITE_BUILD_AUTHOR_EMAIL")
 	return tags
 }
 
@@ -244,6 +269,7 @@ func extractGitlab() map[string]string {
 	tags[constants.CIJobURL] = os.Getenv("CI_JOB_URL")
 	tags[constants.CIJobName] = os.Getenv("CI_JOB_NAME")
 	tags[constants.CIStageName] = os.Getenv("CI_JOB_STAGE")
+	tags[constants.GitCommitMessage] = os.Getenv("CI_COMMIT_MESSAGE")
 	return tags
 }
 
@@ -309,20 +335,6 @@ func extractTravis() map[string]string {
 	tags[constants.CIPipelineName] = repoSlug
 	tags[constants.CIPipelineURL] = os.Getenv("TRAVIS_BUILD_WEB_URL")
 	tags[constants.CIJobURL] = os.Getenv("TRAVIS_JOB_WEB_URL")
-	return tags
-}
-
-func extractBitrise() map[string]string {
-	tags := map[string]string{}
-	tags[constants.CIProviderName] = "bitrise"
-	tags[constants.GitRepositoryURL] = os.Getenv("GIT_REPOSITORY_URL")
-	tags[constants.GitCommitSHA] = firstEnv("BITRISE_GIT_COMMIT", "GIT_CLONE_COMMIT_HASH")
-	tags[constants.GitBranch] = firstEnv("BITRISEIO_GIT_BRANCH_DEST", "BITRISE_GIT_BRANCH")
-	tags[constants.GitTag] = os.Getenv("BITRISE_GIT_TAG")
-	tags[constants.CIWorkspacePath] = os.Getenv("BITRISE_SOURCE_DIR")
-	tags[constants.CIPipelineID] = os.Getenv("BITRISE_BUILD_SLUG")
-	tags[constants.CIPipelineName] = os.Getenv("BITRISE_APP_TITLE")
-	tags[constants.CIPipelineNumber] = os.Getenv("BITRISE_BUILD_NUMBER")
-	tags[constants.CIPipelineURL] = os.Getenv("BITRISE_BUILD_URL")
+	tags[constants.GitCommitMessage] = os.Getenv("TRAVIS_COMMIT_MESSAGE")
 	return tags
 }
