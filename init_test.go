@@ -49,25 +49,10 @@ func TestStatus(t *testing.T) {
 	assertEqual("TestStatus/pass", s.Tag(constants.TestName).(string))
 	assertEqual(suiteName, s.Tag(constants.TestSuite).(string))
 	assertEqual(fmt.Sprintf("%s.%s", suiteName, "TestStatus/pass"), s.Tag(ext.ResourceName).(string))
-	assertEqual(constants.TestStatusPass, s.Tag(constants.TestStatus).(string))
-	assertEqual(constants.SpanTypeTest, s.Tag(ext.SpanType).(string))
-	assertEqual(constants.SpanTypeTest, s.Tag(constants.SpanKind).(string))
-	assertEqual(constants.TestTypeTest, s.Tag(constants.TestType).(string))
 	assertEqual(framework, s.Tag(constants.TestFramework).(string))
-	assertEqual(constants.CIAppTestOrigin, s.Tag(constants.Origin).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitAuthorDate).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitAuthorEmail).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitAuthorName).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitCommitterDate).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitCommitterEmail).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitCommitterName).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitMessage).(string))
-	assertNotEmpty(s.Tag(constants.GitCommitSHA).(string))
-	assertNotEmpty(s.Tag(constants.GitRepositoryURL).(string))
-	assertNotEmpty(s.Tag(constants.CIWorkspacePath).(string))
-	assertNotEmpty(s.Tag(constants.OSArchitecture).(string))
-	assertNotEmpty(s.Tag(constants.OSPlatform).(string))
-	assertNotEmpty(s.Tag(constants.OSVersion).(string))
+	assertEqual(constants.TestStatusPass, s.Tag(constants.TestStatus).(string))
+	commonEqualCheck(s)
+	commonNotEmptyCheck(s)
 	fmt.Println(s)
 
 	s = spans[1]
@@ -75,12 +60,21 @@ func TestStatus(t *testing.T) {
 	assertEqual("TestStatus/skip", s.Tag(constants.TestName).(string))
 	assertEqual(suiteName, s.Tag(constants.TestSuite).(string))
 	assertEqual(fmt.Sprintf("%s.%s", suiteName, "TestStatus/skip"), s.Tag(ext.ResourceName).(string))
+	assertEqual(framework, s.Tag(constants.TestFramework).(string))
 	assertEqual(constants.TestStatusSkip, s.Tag(constants.TestStatus).(string))
+	commonEqualCheck(s)
+	commonNotEmptyCheck(s)
+	fmt.Println(s)
+}
+
+func commonEqualCheck(s mocktracer.Span) {
 	assertEqual(constants.SpanTypeTest, s.Tag(ext.SpanType).(string))
 	assertEqual(constants.SpanTypeTest, s.Tag(constants.SpanKind).(string))
 	assertEqual(constants.TestTypeTest, s.Tag(constants.TestType).(string))
-	assertEqual(framework, s.Tag(constants.TestFramework).(string))
 	assertEqual(constants.CIAppTestOrigin, s.Tag(constants.Origin).(string))
+}
+
+func commonNotEmptyCheck(s mocktracer.Span) {
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorDate).(string))
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorEmail).(string))
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorName).(string))
@@ -94,7 +88,6 @@ func TestStatus(t *testing.T) {
 	assertNotEmpty(s.Tag(constants.OSArchitecture).(string))
 	assertNotEmpty(s.Tag(constants.OSPlatform).(string))
 	assertNotEmpty(s.Tag(constants.OSVersion).(string))
-	fmt.Println(s)
 }
 
 func assertEqual(expected string, actual string) {
