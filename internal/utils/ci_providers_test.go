@@ -89,6 +89,10 @@ func TestTags(t *testing.T) {
 					for expectedKey, expectedValue := range tags {
 						if actualValue, ok := providerTags[expectedKey]; ok {
 							if expectedValue != actualValue {
+								if expectedValue == strings.ReplaceAll(actualValue, "\\", "/") {
+									continue
+								}
+
 								t.Fatalf("Key: %s, the actual value (%s) is different to the expected value (%s)", expectedKey, actualValue, expectedValue)
 							}
 						} else {
