@@ -74,6 +74,84 @@ func TestExampleWithSubTests(t *testing.T) {
 Note that after this, you can use `ctx` to refer to the context of the running test, which has information
 about its trace. Use it when you make any external calls in order to see the traces within the test span.
 
+For example:
+
+```go
+package go_sdk_sample
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+
+	ddtesting "github.com/DataDog/dd-sdk-go-testing"
+	ddhttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+	ddtracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+)
+
+func TestMain(m *testing.M) {
+	os.Exit(ddtesting.Run(m))
+}
+
+func TestWithExternalCalls(t *testing.T) {
+	ctx, finish := ddtesting.StartTest(t)
+	defer finish()
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello World"))
+	}))
+	defer s.Close()
+
+	t.Run("default", func(t *testing.T) {
+		ctx, finish := ddtesting.StartTestWithContext(ctx, t)
+		defer finish()
+
+		rt := ddhttp.WrapRoundTripper(http.DefaultTransport)
+		client := &http.Client{
+			Transport: rt,
+		}
+
+		req, err := http.NewRequest("GET", s.URL+"/hello/world", nil)
+		if err != nil {
+			t.FailNow()
+		}
+
+		req = req.WithContext(ctx)
+
+		client.Do(req)
+	})
+
+	t.Run("custom-name", func(t *testing.T) {
+		ctx, finish := ddtesting.StartTestWithContext(ctx, t)
+		defer finish()
+
+		span, _ := ddtracer.SpanFromContext(ctx)
+
+		customNamer := func(req *http.Request) string {
+			value := fmt.Sprintf("%s %s", req.Method, req.URL.Path)
+			span.SetTag("customNamer.Value", value)
+			return value
+		}
+
+		rt := ddhttp.WrapRoundTripper(http.DefaultTransport, ddhttp.RTWithResourceNamer(customNamer))
+		client := &http.Client{
+			Transport: rt,
+		}
+
+		req, err := http.NewRequest("GET", s.URL+"/hello/world", nil)
+		if err != nil {
+			t.FailNow()
+		}
+
+		req = req.WithContext(ctx)
+
+		client.Do(req)
+	})
+}
+```
+
 ## License
 
 This work is dual-licensed under Apache 2.0 or BSD3.
