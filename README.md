@@ -4,7 +4,7 @@
 ## Getting Started
 
 ### Installing
-Installation of the DataDog go testing sdk is done via `go get`:
+Installation of the Datadog Go testing SDK is done via `go get`:
 
 ```shell
 go get -u github.com/DataDog/dd-sdk-go-testing
