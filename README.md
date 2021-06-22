@@ -15,7 +15,7 @@ go get -u github.com/DataDog/dd-sdk-go-testing
 - Datadog's Trace Agent >= 5.21.1
 
 ### Instrumenting your tests
-In order to instrument your tests that use Go's native 
+To instrument tests that use Go's native 
 [`testing`](https://golang.org/pkg/testing/) package, you have to 
 call `ddtesting.Run(m)` in your `TestMain` function, and call
 `ddtesting.StartTest(t)` or `ddtesting.StartTestWithContext(ctx, t)`
@@ -72,7 +72,7 @@ func TestExampleWithSubTests(t *testing.T) {
 ```
 
 Note that after this, you can use `ctx` to refer to the context of the running test, which has information
-about its trace. Use it when you make any external calls in order to see the traces within the test span.
+about its trace. Use it when you make any external call to see the traces within the test span.
 
 For example:
 
