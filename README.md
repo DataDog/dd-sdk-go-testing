@@ -1,5 +1,5 @@
 # Datadog SDK for Go testing
-> This SDK is part of Datadog's [CI Visibility](https://docs.datadoghq.com/continuous_integration/) product, currently in beta
+This SDK is part of Datadog's [CI Visibility](https://docs.datadoghq.com/continuous_integration/) product, currently in beta.
 
 ## Getting Started
 
