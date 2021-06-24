@@ -6,6 +6,7 @@
 package dd_sdk_go_testing
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -105,14 +106,43 @@ func StartTestWithContext(ctx context.Context, tb testing.TB, opts ...Option) (c
 	span, ctx := tracer.StartSpanFromContext(ctx, constants.SpanTypeTest, cfg.spanOpts...)
 
 	return ctx, func() {
-		span.SetTag(ext.Error, tb.Failed())
-		if tb.Failed() {
+		var r interface{} = nil
+		if r = recover(); r != nil {
 			span.SetTag(constants.TestStatus, constants.TestStatusFail)
-		} else if tb.Skipped() {
-			span.SetTag(constants.TestStatus, constants.TestStatusSkip)
+
+			pcs := make([]uintptr, 256)
+			total := runtime.Callers(2, pcs)
+			pcs = pcs[:total]
+			frames := runtime.CallersFrames(pcs)
+			buffer := new(bytes.Buffer)
+			for {
+				if frame, ok := frames.Next(); ok {
+					fmt.Fprintf(buffer, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+				} else {
+					break
+				}
+
+			}
+			span.SetTag(ext.Error, true)
+			span.SetTag(ext.ErrorMsg, fmt.Sprint(r))
+			span.SetTag(ext.ErrorStack, buffer.String())
+			span.SetTag(ext.ErrorType, "panic")
 		} else {
-			span.SetTag(constants.TestStatus, constants.TestStatusPass)
+			span.SetTag(ext.Error, tb.Failed())
+			if tb.Failed() {
+				span.SetTag(constants.TestStatus, constants.TestStatusFail)
+			} else if tb.Skipped() {
+				span.SetTag(constants.TestStatus, constants.TestStatusSkip)
+			} else {
+				span.SetTag(constants.TestStatus, constants.TestStatusPass)
+			}
 		}
+
 		span.Finish(cfg.finishOpts...)
+
+		if r != nil {
+			tracer.Flush()
+			panic(r)
+		}
 	}
 }
