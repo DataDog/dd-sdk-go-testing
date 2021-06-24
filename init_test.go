@@ -7,6 +7,7 @@ package dd_sdk_go_testing
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
@@ -14,6 +15,10 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
+
+func TestMain(m *testing.M) {
+	os.Exit(Run(m))
+}
 
 func TestStatus(t *testing.T) {
 	mt := mocktracer.Start()
