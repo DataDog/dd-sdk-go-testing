@@ -142,6 +142,7 @@ func StartTestWithContext(ctx context.Context, tb testing.TB, opts ...Option) (c
 
 		if r != nil {
 			tracer.Flush()
+			tracer.Stop()
 			panic(r)
 		}
 	}
