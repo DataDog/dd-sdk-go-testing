@@ -107,28 +107,18 @@ func StartTestWithContext(ctx context.Context, tb testing.TB, opts ...Option) (c
 
 	return ctx, func() {
 		var r interface{} = nil
+
 		if r = recover(); r != nil {
+			// Panic handling
 			span.SetTag(constants.TestStatus, constants.TestStatusFail)
-
-			pcs := make([]uintptr, 256)
-			total := runtime.Callers(2, pcs)
-			pcs = pcs[:total]
-			frames := runtime.CallersFrames(pcs)
-			buffer := new(bytes.Buffer)
-			for {
-				if frame, ok := frames.Next(); ok {
-					fmt.Fprintf(buffer, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
-				} else {
-					break
-				}
-
-			}
 			span.SetTag(ext.Error, true)
 			span.SetTag(ext.ErrorMsg, fmt.Sprint(r))
-			span.SetTag(ext.ErrorStack, buffer.String())
+			span.SetTag(ext.ErrorStack, getStacktrace(2))
 			span.SetTag(ext.ErrorType, "panic")
 		} else {
+			// Normal finalization
 			span.SetTag(ext.Error, tb.Failed())
+
 			if tb.Failed() {
 				span.SetTag(constants.TestStatus, constants.TestStatusFail)
 			} else if tb.Skipped() {
@@ -146,4 +136,20 @@ func StartTestWithContext(ctx context.Context, tb testing.TB, opts ...Option) (c
 			panic(r)
 		}
 	}
+}
+
+func getStacktrace(skip int) string {
+	pcs := make([]uintptr, 256)
+	total := runtime.Callers(skip+1, pcs)
+	frames := runtime.CallersFrames(pcs[:total])
+	buffer := new(bytes.Buffer)
+	for {
+		if frame, ok := frames.Next(); ok {
+			fmt.Fprintf(buffer, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+		} else {
+			break
+		}
+
+	}
+	return buffer.String()
 }
