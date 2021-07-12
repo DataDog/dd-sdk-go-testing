@@ -72,6 +72,34 @@ func TestStatus(t *testing.T) {
 	fmt.Println(s)
 }
 
+func TestPanic(t *testing.T) {
+	mt := mocktracer.Start()
+	defer mt.Stop()
+
+	t.Run("panic", func(t *testing.T) {
+		defer func() {
+			// recover panic to finish the subtest successfully
+			recover()
+		}()
+
+		_, finish := StartTest(t)
+		defer finish()
+
+		panic("forced panic")
+	})
+
+	spans := mt.FinishedSpans()
+	if len(spans) != 1 {
+		t.FailNow()
+	}
+
+	s := spans[0]
+	assertEqual("forced panic", s.Tag(ext.ErrorMsg).(string))
+	assertEqual("panic", s.Tag(ext.ErrorType).(string))
+	assertEqual("true", fmt.Sprint(s.Tag(ext.Error)))
+	assertNotEmpty(s.Tag(ext.ErrorStack).(string))
+}
+
 func commonEqualCheck(s mocktracer.Span) {
 	assertEqual(constants.SpanTypeTest, s.Tag(ext.SpanType).(string))
 	assertEqual(constants.SpanTypeTest, s.Tag(constants.SpanKind).(string))
