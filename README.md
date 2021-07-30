@@ -152,6 +152,17 @@ func TestWithExternalCalls(t *testing.T) {
 }
 ```
 
+## Environment variables
+
+The following environment variables sets the configuration options of the sdk:
+
+| Name                  | Description                                        | Default             | Example       |
+|-----------------------|----------------------------------------------------|---------------------|---------------|
+| `DD_SERVICE`          | Name of the service or library under test.         | The repository name | `my-go-app`   |
+| `DD_ENV`              | Name of the environment where tests are being run. | `none`              | `ci`, `local` |
+| `DD_AGENT_HOST`       | Datadog Agent host for trace collection            | `localhost`         |               |
+| `DD_TRACE_AGENT_PORT` | Datadog Agent port for trace collection            | `8126`              |               |
+
 ## License
 
 This work is dual-licensed under Apache 2.0 or BSD3.
