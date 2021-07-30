@@ -154,7 +154,7 @@ func TestWithExternalCalls(t *testing.T) {
 
 ## Environment variables
 
-The following environment variables sets the configuration options of the sdk:
+The following environment variables set the configuration options of the sdk:
 
 | Name                  | Description                                        | Default             | Example       |
 |-----------------------|----------------------------------------------------|---------------------|---------------|
