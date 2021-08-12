@@ -121,3 +121,11 @@ func WithIncrementSkipFrame() Option {
 		cfg.skip = cfg.skip + 1
 	}
 }
+
+// WithFinishOptions defines a set of additional ddtrace.FinishOption to be added
+// to spans started by the integration.
+func WithFinishOptions(opts ...ddtrace.FinishOption) Option {
+	return func(cfg *config) {
+		cfg.finishOpts = append(cfg.finishOpts, opts...)
+	}
+}
