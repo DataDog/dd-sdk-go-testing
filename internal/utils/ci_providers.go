@@ -61,17 +61,7 @@ func GetProviderTags() map[string]string {
 	}
 
 	// replace with user specific tags
-	tags[constants.GitBranch] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_BRANCH", tags[constants.GitBranch])
-	tags[constants.GitTag] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_TAG", tags[constants.GitTag])
-	tags[constants.GitRepositoryURL] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_REPOSITORY_URL", tags[constants.GitRepositoryURL])
-	tags[constants.GitCommitSHA] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_SHA", tags[constants.GitCommitSHA])
-	tags[constants.GitCommitMessage] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_MESSAGE", tags[constants.GitCommitMessage])
-	tags[constants.GitCommitAuthorName] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_AUTHOR_NAME", tags[constants.GitCommitAuthorName])
-	tags[constants.GitCommitAuthorEmail] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_AUTHOR_EMAIL", tags[constants.GitCommitAuthorEmail])
-	tags[constants.GitCommitAuthorDate] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_AUTHOR_DATE", tags[constants.GitCommitAuthorDate])
-	tags[constants.GitCommitCommitterName] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_COMMITTER_NAME", tags[constants.GitCommitCommitterName])
-	tags[constants.GitCommitCommitterEmail] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_COMMITTER_EMAIL", tags[constants.GitCommitCommitterEmail])
-	tags[constants.GitCommitCommitterDate] = getEnvironmentVariableIfIsNotEmpty("DD_GIT_COMMIT_COMMITTER_DATE", tags[constants.GitCommitCommitterDate])
+	replaceWithUserSpecificTags(tags)
 
 	// remove empty values
 	for tag, value := range tags {
@@ -81,6 +71,25 @@ func GetProviderTags() map[string]string {
 	}
 
 	return tags
+}
+
+func replaceWithUserSpecificTags(tags map[string]string) {
+
+	replace := func(tagName, envName string) {
+		tags[tagName] = getEnvironmentVariableIfIsNotEmpty(envName, tags[tagName])
+	}
+
+	replace(constants.GitBranch, "DD_GIT_BRANCH")
+	replace(constants.GitTag, "DD_GIT_TAG")
+	replace(constants.GitRepositoryURL, "DD_GIT_REPOSITORY_URL")
+	replace(constants.GitCommitSHA, "DD_GIT_COMMIT_SHA")
+	replace(constants.GitCommitMessage, "DD_GIT_COMMIT_MESSAGE")
+	replace(constants.GitCommitAuthorName, "DD_GIT_COMMIT_AUTHOR_NAME")
+	replace(constants.GitCommitAuthorEmail, "DD_GIT_COMMIT_AUTHOR_EMAIL")
+	replace(constants.GitCommitAuthorDate, "DD_GIT_COMMIT_AUTHOR_DATE")
+	replace(constants.GitCommitCommitterName, "DD_GIT_COMMIT_COMMITTER_NAME")
+	replace(constants.GitCommitCommitterEmail, "DD_GIT_COMMIT_COMMITTER_EMAIL")
+	replace(constants.GitCommitCommitterDate, "DD_GIT_COMMIT_COMMITTER_DATE")
 }
 
 func getEnvironmentVariableIfIsNotEmpty(key string, defaultValue string) string {
