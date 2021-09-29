@@ -58,15 +58,46 @@ func GetProviderTags() map[string]string {
 				tags[constants.CIWorkspacePath] = value
 			}
 		}
+	}
 
-		// remove empty values
-		for tag, value := range tags {
-			if value == "" {
-				delete(tags, tag)
-			}
+	// replace with user specific tags
+	replaceWithUserSpecificTags(tags)
+
+	// remove empty values
+	for tag, value := range tags {
+		if value == "" {
+			delete(tags, tag)
 		}
 	}
+
 	return tags
+}
+
+func replaceWithUserSpecificTags(tags map[string]string) {
+
+	replace := func(tagName, envName string) {
+		tags[tagName] = getEnvironmentVariableIfIsNotEmpty(envName, tags[tagName])
+	}
+
+	replace(constants.GitBranch, "DD_GIT_BRANCH")
+	replace(constants.GitTag, "DD_GIT_TAG")
+	replace(constants.GitRepositoryURL, "DD_GIT_REPOSITORY_URL")
+	replace(constants.GitCommitSHA, "DD_GIT_COMMIT_SHA")
+	replace(constants.GitCommitMessage, "DD_GIT_COMMIT_MESSAGE")
+	replace(constants.GitCommitAuthorName, "DD_GIT_COMMIT_AUTHOR_NAME")
+	replace(constants.GitCommitAuthorEmail, "DD_GIT_COMMIT_AUTHOR_EMAIL")
+	replace(constants.GitCommitAuthorDate, "DD_GIT_COMMIT_AUTHOR_DATE")
+	replace(constants.GitCommitCommitterName, "DD_GIT_COMMIT_COMMITTER_NAME")
+	replace(constants.GitCommitCommitterEmail, "DD_GIT_COMMIT_COMMITTER_EMAIL")
+	replace(constants.GitCommitCommitterDate, "DD_GIT_COMMIT_COMMITTER_DATE")
+}
+
+func getEnvironmentVariableIfIsNotEmpty(key string, defaultValue string) string {
+	if value, ok := os.LookupEnv(key); ok && value != "" {
+		return value
+	} else {
+		return defaultValue
+	}
 }
 
 func normalizeRef(name string) string {
@@ -110,10 +141,14 @@ func extractAppveyor() map[string]string {
 	tags[constants.CIProviderName] = "appveyor"
 	if os.Getenv("APPVEYOR_REPO_PROVIDER") == "github" {
 		tags[constants.GitRepositoryURL] = fmt.Sprintf("https://github.com/%s.git", os.Getenv("APPVEYOR_REPO_NAME"))
-		tags[constants.GitCommitSHA] = os.Getenv("APPVEYOR_REPO_COMMIT")
-		tags[constants.GitBranch] = firstEnv("APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH", "APPVEYOR_REPO_BRANCH")
-		tags[constants.GitTag] = os.Getenv("APPVEYOR_REPO_TAG_NAME")
+	} else {
+		tags[constants.GitRepositoryURL] = os.Getenv("APPVEYOR_REPO_NAME")
 	}
+
+	tags[constants.GitCommitSHA] = os.Getenv("APPVEYOR_REPO_COMMIT")
+	tags[constants.GitBranch] = firstEnv("APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH", "APPVEYOR_REPO_BRANCH")
+	tags[constants.GitTag] = os.Getenv("APPVEYOR_REPO_TAG_NAME")
+
 	tags[constants.CIWorkspacePath] = os.Getenv("APPVEYOR_BUILD_FOLDER")
 	tags[constants.CIPipelineID] = os.Getenv("APPVEYOR_BUILD_ID")
 	tags[constants.CIPipelineName] = os.Getenv("APPVEYOR_REPO_NAME")
@@ -141,11 +176,17 @@ func extractAzurePipelines() map[string]string {
 	}
 	tags[constants.CIProviderName] = "azurepipelines"
 	tags[constants.CIWorkspacePath] = os.Getenv("BUILD_SOURCESDIRECTORY")
+
 	tags[constants.CIPipelineID] = os.Getenv("BUILD_BUILDID")
 	tags[constants.CIPipelineName] = os.Getenv("BUILD_DEFINITIONNAME")
 	tags[constants.CIPipelineNumber] = os.Getenv("BUILD_BUILDID")
 	tags[constants.CIPipelineURL] = pipelineURL
+
+	tags[constants.CIStageName] = os.Getenv("SYSTEM_STAGEDISPLAYNAME")
+
+	tags[constants.CIJobName] = os.Getenv("SYSTEM_JOBDISPLAYNAME")
 	tags[constants.CIJobURL] = jobURL
+
 	tags[constants.GitRepositoryURL] = firstEnv("SYSTEM_PULLREQUEST_SOURCEREPOSITORYURI", "BUILD_REPOSITORY_URI")
 	tags[constants.GitCommitSHA] = firstEnv("SYSTEM_PULLREQUEST_SOURCECOMMITID", "BUILD_SOURCEVERSION")
 	tags[constants.GitBranch] = branch
@@ -165,7 +206,7 @@ func extractBitrise() map[string]string {
 	tags[constants.GitTag] = os.Getenv("BITRISE_GIT_TAG")
 	tags[constants.CIWorkspacePath] = os.Getenv("BITRISE_SOURCE_DIR")
 	tags[constants.CIPipelineID] = os.Getenv("BITRISE_BUILD_SLUG")
-	tags[constants.CIPipelineName] = os.Getenv("BITRISE_APP_TITLE")
+	tags[constants.CIPipelineName] = os.Getenv("BITRISE_TRIGGERED_WORKFLOW_ID")
 	tags[constants.CIPipelineNumber] = os.Getenv("BITRISE_BUILD_NUMBER")
 	tags[constants.CIPipelineURL] = os.Getenv("BITRISE_BUILD_URL")
 	tags[constants.GitCommitMessage] = os.Getenv("BITRISE_GIT_MESSAGE")
@@ -255,6 +296,7 @@ func extractGitlab() map[string]string {
 	tags := map[string]string{}
 	url := os.Getenv("CI_PIPELINE_URL")
 	url = string(regexp.MustCompile("/-/pipelines/").ReplaceAll([]byte(url), []byte("/pipelines/"))[:])
+	url = strings.ReplaceAll(url, "/-/pipelines/", "/pipelines/")
 
 	tags[constants.CIProviderName] = "gitlab"
 	tags[constants.GitRepositoryURL] = os.Getenv("CI_REPOSITORY_URL")
@@ -270,13 +312,21 @@ func extractGitlab() map[string]string {
 	tags[constants.CIJobName] = os.Getenv("CI_JOB_NAME")
 	tags[constants.CIStageName] = os.Getenv("CI_JOB_STAGE")
 	tags[constants.GitCommitMessage] = os.Getenv("CI_COMMIT_MESSAGE")
+
+	author := os.Getenv("CI_COMMIT_AUTHOR")
+	authorArray := strings.FieldsFunc(author, func(s rune) bool {
+		return s == '<' || s == '>'
+	})
+	tags[constants.GitCommitAuthorName] = strings.TrimSpace(authorArray[0])
+	tags[constants.GitCommitAuthorEmail] = strings.TrimSpace(authorArray[1])
+	tags[constants.GitCommitAuthorDate] = os.Getenv("CI_COMMIT_TIMESTAMP")
 	return tags
 }
 
 func extractJenkins() map[string]string {
 	tags := map[string]string{}
 	tags[constants.CIProviderName] = "jenkins"
-	tags[constants.GitRepositoryURL] = os.Getenv("GIT_URL")
+	tags[constants.GitRepositoryURL] = firstEnv("GIT_URL", "GIT_URL_1")
 	tags[constants.GitCommitSHA] = os.Getenv("GIT_COMMIT")
 
 	branchOrTag := os.Getenv("GIT_BRANCH")
