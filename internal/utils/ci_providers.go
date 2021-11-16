@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/go-homedir"
 )
 
 type providerType = func() map[string]string
@@ -39,29 +39,21 @@ func GetProviderTags() map[string]string {
 			continue
 		}
 		tags = provider()
-
-		if tag, ok := tags[constants.GitTag]; ok && tag != "" {
-			tags[constants.GitTag] = normalizeRef(tag)
-			delete(tags, constants.GitBranch)
-		}
-		if tag, ok := tags[constants.GitBranch]; ok && tag != "" {
-			tags[constants.GitBranch] = normalizeRef(tag)
-		}
-		if tag, ok := tags[constants.GitRepositoryURL]; ok && tag != "" {
-			tags[constants.GitRepositoryURL] = filterSensitiveInfo(tag)
-		}
-
-		// Expand ~
-		if tag, ok := tags[constants.CIWorkspacePath]; ok && tag != "" {
-			homedir.Reset()
-			if value, err := homedir.Expand(tag); err == nil {
-				tags[constants.CIWorkspacePath] = value
-			}
-		}
 	}
 
 	// replace with user specific tags
 	replaceWithUserSpecificTags(tags)
+
+	// Normalize tags
+	normalizeTags(tags)
+
+	// Expand ~
+	if tag, ok := tags[constants.CIWorkspacePath]; ok && tag != "" {
+		homedir.Reset()
+		if value, err := homedir.Expand(tag); err == nil {
+			tags[constants.CIWorkspacePath] = value
+		}
+	}
 
 	// remove empty values
 	for tag, value := range tags {
@@ -71,6 +63,22 @@ func GetProviderTags() map[string]string {
 	}
 
 	return tags
+}
+
+func normalizeTags(tags map[string]string) {
+	if tag, ok := tags[constants.GitBranch]; ok && tag != "" {
+		if strings.Contains(tag, "refs/tags") || strings.Contains(tag, "origin/tags") || strings.Contains(tag, "refs/heads/tags") {
+			tags[constants.GitTag] = normalizeRef(tag)
+		}
+		tags[constants.GitBranch] = normalizeRef(tag)
+	}
+	if tag, ok := tags[constants.GitTag]; ok && tag != "" {
+		tags[constants.GitTag] = normalizeRef(tag)
+		delete(tags, constants.GitBranch)
+	}
+	if tag, ok := tags[constants.GitRepositoryURL]; ok && tag != "" {
+		tags[constants.GitRepositoryURL] = filterSensitiveInfo(tag)
+	}
 }
 
 func replaceWithUserSpecificTags(tags map[string]string) {
@@ -277,18 +285,34 @@ func extractGithubActions() map[string]string {
 		branch = branchOrTag
 	}
 
-	url := fmt.Sprintf("https://github.com/%s/commit/%s/checks", os.Getenv("GITHUB_REPOSITORY"), os.Getenv("GITHUB_SHA"))
+	serverUrl := os.Getenv("GITHUB_SERVER_URL")
+	if serverUrl == "" {
+		serverUrl = "https://github.com"
+	}
+	serverUrl = strings.TrimSuffix(serverUrl, "/")
+
+	rawRepository := fmt.Sprintf("%s/%s", serverUrl, os.Getenv("GITHUB_REPOSITORY"))
+	pipelineId := os.Getenv("GITHUB_RUN_ID")
+	commitSha := os.Getenv("GITHUB_SHA")
+
 	tags[constants.CIProviderName] = "github"
-	tags[constants.GitRepositoryURL] = fmt.Sprintf("https://github.com/%s.git", os.Getenv("GITHUB_REPOSITORY"))
-	tags[constants.GitCommitSHA] = os.Getenv("GITHUB_SHA")
+	tags[constants.GitRepositoryURL] = rawRepository + ".git"
+	tags[constants.GitCommitSHA] = commitSha
 	tags[constants.GitBranch] = branch
 	tags[constants.GitTag] = tag
 	tags[constants.CIWorkspacePath] = os.Getenv("GITHUB_WORKSPACE")
-	tags[constants.CIPipelineID] = os.Getenv("GITHUB_RUN_ID")
+	tags[constants.CIPipelineID] = pipelineId
 	tags[constants.CIPipelineNumber] = os.Getenv("GITHUB_RUN_NUMBER")
 	tags[constants.CIPipelineName] = os.Getenv("GITHUB_WORKFLOW")
-	tags[constants.CIPipelineURL] = url
-	tags[constants.CIJobURL] = url
+	tags[constants.CIJobURL] = fmt.Sprintf("%s/commit/%s/checks", rawRepository, commitSha)
+
+	attempts := os.Getenv("GITHUB_RUN_ATTEMPT")
+	if attempts == "" {
+		tags[constants.CIPipelineURL] = fmt.Sprintf("%s/actions/runs/%s", rawRepository, pipelineId)
+	} else {
+		tags[constants.CIPipelineURL] = fmt.Sprintf("%s/actions/runs/%s/attempts/%s", rawRepository, pipelineId, attempts)
+	}
+
 	return tags
 }
 

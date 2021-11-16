@@ -7,6 +7,7 @@ package dd_sdk_go_testing
 
 import (
 	"runtime"
+	"sync"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
@@ -17,7 +18,8 @@ import (
 
 var (
 	// tags contains information detected from CI/CD environment variables.
-	tags map[string]string
+	tags      map[string]string
+	tagsMutex sync.Mutex
 )
 
 type config struct {
@@ -38,64 +40,91 @@ func defaults(cfg *config) {
 		tracer.Tag(ext.ManualKeep, true),
 	}
 
-	// Load tags
-	if tags == nil {
-		loadTags()
-	}
-
-	for k, v := range tags {
+	// Ensure CI tags
+	ensureCITags()
+	forEachCITags(func(k, v string) {
 		cfg.spanOpts = append(cfg.spanOpts, tracer.Tag(k, v))
-	}
+	})
 
 	cfg.finishOpts = []ddtrace.FinishOption{}
 }
 
-func loadTags() {
-	tags = utils.GetProviderTags()
-	tags[constants.OSPlatform] = utils.OSName()
-	tags[constants.OSVersion] = utils.OSVersion()
-	tags[constants.OSArchitecture] = runtime.GOARCH
-	tags[constants.RuntimeName] = runtime.Compiler
-	tags[constants.RuntimeVersion] = runtime.Version()
+func ensureCITags() {
+	if tags != nil {
+		return
+	}
+
+	localTags := utils.GetProviderTags()
+	localTags[constants.OSPlatform] = utils.OSName()
+	localTags[constants.OSVersion] = utils.OSVersion()
+	localTags[constants.OSArchitecture] = runtime.GOARCH
+	localTags[constants.RuntimeName] = runtime.Compiler
+	localTags[constants.RuntimeVersion] = runtime.Version()
 
 	gitData, _ := utils.LocalGetGitData()
 
 	// Guess Git metadata from a local Git repository otherwise.
-	if _, ok := tags[constants.CIWorkspacePath]; !ok {
-		tags[constants.CIWorkspacePath] = gitData.SourceRoot
+	if _, ok := localTags[constants.CIWorkspacePath]; !ok {
+		localTags[constants.CIWorkspacePath] = gitData.SourceRoot
 	}
-	if _, ok := tags[constants.GitRepositoryURL]; !ok {
-		tags[constants.GitRepositoryURL] = gitData.RepositoryUrl
+	if _, ok := localTags[constants.GitRepositoryURL]; !ok {
+		localTags[constants.GitRepositoryURL] = gitData.RepositoryUrl
 	}
-	if _, ok := tags[constants.GitCommitSHA]; !ok {
-		tags[constants.GitCommitSHA] = gitData.CommitSha
+	if _, ok := localTags[constants.GitCommitSHA]; !ok {
+		localTags[constants.GitCommitSHA] = gitData.CommitSha
 	}
-	if _, ok := tags[constants.GitBranch]; !ok {
-		tags[constants.GitBranch] = gitData.Branch
+	if _, ok := localTags[constants.GitBranch]; !ok {
+		localTags[constants.GitBranch] = gitData.Branch
 	}
 
-	if tags[constants.GitCommitSHA] == gitData.CommitSha {
-		if _, ok := tags[constants.GitCommitAuthorDate]; !ok {
-			tags[constants.GitCommitAuthorDate] = gitData.AuthorDate.String()
+	if localTags[constants.GitCommitSHA] == gitData.CommitSha {
+		if _, ok := localTags[constants.GitCommitAuthorDate]; !ok {
+			localTags[constants.GitCommitAuthorDate] = gitData.AuthorDate.String()
 		}
-		if _, ok := tags[constants.GitCommitAuthorName]; !ok {
-			tags[constants.GitCommitAuthorName] = gitData.AuthorName
+		if _, ok := localTags[constants.GitCommitAuthorName]; !ok {
+			localTags[constants.GitCommitAuthorName] = gitData.AuthorName
 		}
-		if _, ok := tags[constants.GitCommitAuthorEmail]; !ok {
-			tags[constants.GitCommitAuthorEmail] = gitData.AuthorEmail
+		if _, ok := localTags[constants.GitCommitAuthorEmail]; !ok {
+			localTags[constants.GitCommitAuthorEmail] = gitData.AuthorEmail
 		}
-		if _, ok := tags[constants.GitCommitCommitterDate]; !ok {
-			tags[constants.GitCommitCommitterDate] = gitData.CommitterDate.String()
+		if _, ok := localTags[constants.GitCommitCommitterDate]; !ok {
+			localTags[constants.GitCommitCommitterDate] = gitData.CommitterDate.String()
 		}
-		if _, ok := tags[constants.GitCommitCommitterName]; !ok {
-			tags[constants.GitCommitCommitterName] = gitData.CommitterName
+		if _, ok := localTags[constants.GitCommitCommitterName]; !ok {
+			localTags[constants.GitCommitCommitterName] = gitData.CommitterName
 		}
-		if _, ok := tags[constants.GitCommitCommitterEmail]; !ok {
-			tags[constants.GitCommitCommitterEmail] = gitData.CommitterEmail
+		if _, ok := localTags[constants.GitCommitCommitterEmail]; !ok {
+			localTags[constants.GitCommitCommitterEmail] = gitData.CommitterEmail
 		}
-		if _, ok := tags[constants.GitCommitMessage]; !ok {
-			tags[constants.GitCommitMessage] = gitData.CommitMessage
+		if _, ok := localTags[constants.GitCommitMessage]; !ok {
+			localTags[constants.GitCommitMessage] = gitData.CommitMessage
 		}
+	}
+
+	// Replace global tags with local copy
+	tagsMutex.Lock()
+	defer tagsMutex.Unlock()
+
+	tags = localTags
+}
+
+func getFromCITags(key string) (string, bool) {
+	tagsMutex.Lock()
+	defer tagsMutex.Unlock()
+
+	if value, ok := tags[key]; ok {
+		return value, ok
+	}
+
+	return "", false
+}
+
+func forEachCITags(itemFunc func(string, string)) {
+	tagsMutex.Lock()
+	defer tagsMutex.Unlock()
+
+	for k, v := range tags {
+		itemFunc(k, v)
 	}
 }
 
