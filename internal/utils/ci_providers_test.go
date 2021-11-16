@@ -81,6 +81,13 @@ func TestTags(t *testing.T) {
 				env := line[0]
 				tags := line[1]
 
+				if providerName == "github" {
+					// We initialize GITHUB_RUN_ATTEMPT if doesn't exist to avoid using the one set in the github action.
+					if _, ok := env["GITHUB_RUN_ATTEMPT"]; !ok {
+						env["GITHUB_RUN_ATTEMPT"] = ""
+					}
+				}
+
 				t.Run(name, func(t *testing.T) {
 					reset := setEnvs(env)
 					defer reset()
