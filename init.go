@@ -36,11 +36,11 @@ type FinishFunc func()
 // Run is a helper function to run a `testing.M` object and gracefully stopping the tracer afterwards
 func Run(m *testing.M, opts ...tracer.StartOption) int {
 	// Preload all CI and Git tags.
-	loadTags()
+	ensureCITags()
 
 	// Check if DD_SERVICE has been set; otherwise we default to repo name.
 	if v := os.Getenv("DD_SERVICE"); v == "" {
-		if repoUrl, ok := tags[constants.GitRepositoryURL]; ok {
+		if repoUrl, ok := getFromCITags(constants.GitRepositoryURL); ok {
 			matches := repoRegex.FindStringSubmatch(repoUrl)
 			if len(matches) > 1 {
 				repoUrl = strings.TrimSuffix(matches[1], ".git")
@@ -51,14 +51,18 @@ func Run(m *testing.M, opts ...tracer.StartOption) int {
 
 	// Initialize tracer
 	tracer.Start(opts...)
-	defer tracer.Stop()
+	exitFunc := func() {
+		tracer.Flush()
+		tracer.Stop()
+	}
+	defer exitFunc()
 
 	// Handle SIGINT and SIGTERM
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-signals
-		tracer.Stop()
+		exitFunc()
 		os.Exit(1)
 	}()
 
