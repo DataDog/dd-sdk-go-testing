@@ -50,9 +50,6 @@ func defaults(cfg *config) {
 }
 
 func ensureCITags() {
-	tagsMutex.Lock()
-	defer tagsMutex.Unlock()
-
 	if tags != nil {
 		return
 	}
@@ -105,6 +102,9 @@ func ensureCITags() {
 	}
 
 	// Replace global tags with local copy
+	tagsMutex.Lock()
+	defer tagsMutex.Unlock()
+
 	tags = localTags
 }
 

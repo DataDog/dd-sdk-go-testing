@@ -289,13 +289,14 @@ func extractGithubActions() map[string]string {
 	if serverUrl == "" {
 		serverUrl = "https://github.com"
 	}
+	serverUrl = strings.TrimSuffix(serverUrl, "/")
 
 	rawRepository := fmt.Sprintf("%s/%s", serverUrl, os.Getenv("GITHUB_REPOSITORY"))
 	pipelineId := os.Getenv("GITHUB_RUN_ID")
 	commitSha := os.Getenv("GITHUB_SHA")
 
 	tags[constants.CIProviderName] = "github"
-	tags[constants.GitRepositoryURL] = fmt.Sprintf("%s.git", rawRepository)
+	tags[constants.GitRepositoryURL] = rawRepository + ".git"
 	tags[constants.GitCommitSHA] = commitSha
 	tags[constants.GitBranch] = branch
 	tags[constants.GitTag] = tag
