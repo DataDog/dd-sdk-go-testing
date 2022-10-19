@@ -70,16 +70,26 @@ func Run(m *testing.M, opts ...tracer.StartOption) int {
 	return m.Run()
 }
 
+// TB is the minimal interface common to T and B.
+type TB interface {
+	Failed() bool
+	Name() string
+	Skipped() bool
+}
+
+var _ TB = (*testing.T)(nil)
+var _ TB = (*testing.B)(nil)
+
 // StartTest returns a new span with the given testing.TB interface and options. It uses
 // tracer.StartSpanFromContext function to start the span with automatically detected information.
-func StartTest(tb testing.TB, opts ...Option) (context.Context, FinishFunc) {
+func StartTest(tb TB, opts ...Option) (context.Context, FinishFunc) {
 	opts = append(opts, WithIncrementSkipFrame())
 	return StartTestWithContext(context.Background(), tb, opts...)
 }
 
 // StartTestWithContext returns a new span with the given testing.TB interface and options. It uses
 // tracer.StartSpanFromContext function to start the span with automatically detected information.
-func StartTestWithContext(ctx context.Context, tb testing.TB, opts ...Option) (context.Context, FinishFunc) {
+func StartTestWithContext(ctx context.Context, tb TB, opts ...Option) (context.Context, FinishFunc) {
 	cfg := new(config)
 	defaults(cfg)
 	for _, fn := range opts {
