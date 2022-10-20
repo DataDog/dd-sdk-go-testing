@@ -136,6 +136,14 @@ func WithSpanOptions(opts ...ddtrace.StartSpanOption) Option {
 	}
 }
 
+// WithFinishSpanOptions defines a set of additional ddtrace.FinishOption to be added
+// to spans ended by the integration.
+func WithFinishSpanOptions(opts ...ddtrace.FinishOption) Option {
+	return func(cfg *config) {
+		cfg.finishOpts = append(cfg.finishOpts, opts...)
+	}
+}
+
 // WithSkipFrames defines a how many frames should be skipped for caller autodetection.
 // The value should be changed if StartSpanWithFinish is called from a custom wrapper.
 func WithSkipFrames(skip int) Option {
