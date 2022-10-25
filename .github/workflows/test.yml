@@ -1,5 +1,5 @@
 name: Go
-on: [push, workflow_run, pull_request]
+on: [push, pull_request]
 jobs:
   test:
     name: Test
