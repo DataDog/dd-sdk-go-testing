@@ -18,8 +18,8 @@ import (
 
 var (
 	// tags contains information detected from CI/CD environment variables.
-	tags      map[string]string
-	tagsMutex sync.Mutex
+	tags     map[string]string
+	tagsOnce sync.Once
 )
 
 type config struct {
@@ -50,10 +50,10 @@ func defaults(cfg *config) {
 }
 
 func ensureCITags() {
-	if tags != nil {
-		return
-	}
+	tagsOnce.Do(ensureCITagsLocked)
+}
 
+func ensureCITagsLocked() {
 	localTags := utils.GetProviderTags()
 	localTags[constants.OSPlatform] = utils.OSName()
 	localTags[constants.OSVersion] = utils.OSVersion()
@@ -102,16 +102,10 @@ func ensureCITags() {
 	}
 
 	// Replace global tags with local copy
-	tagsMutex.Lock()
-	defer tagsMutex.Unlock()
-
 	tags = localTags
 }
 
 func getFromCITags(key string) (string, bool) {
-	tagsMutex.Lock()
-	defer tagsMutex.Unlock()
-
 	if value, ok := tags[key]; ok {
 		return value, ok
 	}
@@ -120,9 +114,6 @@ func getFromCITags(key string) (string, bool) {
 }
 
 func forEachCITags(itemFunc func(string, string)) {
-	tagsMutex.Lock()
-	defer tagsMutex.Unlock()
-
 	for k, v := range tags {
 		itemFunc(k, v)
 	}
