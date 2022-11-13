@@ -1,6 +1,10 @@
 # Datadog SDK for Ginkgo testing
 This SDK is part of Datadog's [CI Visibility sdk](https://github.com/DataDog/dd-sdk-go-testing).
 
+## Current state of the project
+
+This project does not currently support pending or focused specs. This is a known issue and we are working on it.
+
 ## Getting Started
 
 ### Installing

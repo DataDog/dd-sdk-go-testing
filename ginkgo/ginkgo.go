@@ -130,11 +130,17 @@ func FIt(text string, callback ...interface{}) bool {
 func PIt(text string, callback ...interface{}) bool {
 	initSetup()
 
+	// no need to register this test since it will be ignored
+	// see pending spec: https://onsi.github.io/ginkgo/#pending-specs
+
 	return ginkgo.PIt(text, callback...)
 }
 
 func XIt(text string, callback ...interface{}) bool {
 	initSetup()
+
+	// no need to register this test since it will be ignored
+	// see pending spec: https://onsi.github.io/ginkgo/#pending-specs
 
 	return ginkgo.XIt(text, callback...)
 }
@@ -164,11 +170,17 @@ func noop() error { return nil }
 func PSpecify(text string, callback ...interface{}) bool {
 	initSetup()
 
+	// no need to register this test since it will be ignored
+	// see pending spec: https://onsi.github.io/ginkgo/#pending-specs
+
 	return ginkgo.PSpecify(text, utils.PatchArgsNoArgs(noop, noop, callback...)...)
 }
 
 func XSpecify(text string, callback ...interface{}) bool {
 	initSetup()
+
+	// no need to register this test since it will be ignored
+	// see pending spec: https://onsi.github.io/ginkgo/#pending-specs
 
 	return ginkgo.XSpecify(text, utils.PatchArgsNoArgs(noop, noop, callback...)...)
 }
@@ -178,6 +190,9 @@ func By(text string, callback ...func()) {
 
 	test := currentSuite.Snapshot().RegisterTest()
 
+	// `By` accepts 0 or 1 callback
+	// if no callback is provided, it will be called with a noop
+	// so `begin` and `end` fuctions will be called
 	if len(callback) == 0 {
 		callback = []func(){func() {}}
 	}
