@@ -32,4 +32,7 @@ const (
 
 	// CIWorkspacePath records an absolute path to the directory where the project has been checked out.
 	CIWorkspacePath = "ci.workspace_path"
+
+	// CIEnvVars contains env vars used to get the pipeline correlation ID
+	CIEnvVars = "_dd.ci.env_vars"
 )
