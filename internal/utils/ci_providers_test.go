@@ -37,6 +37,13 @@ func setEnvs(env map[string]string) func() {
 	}
 }
 
+func sortJsonKeys(jsonStr string) string {
+	tmp := map[string]string{}
+	json.Unmarshal([]byte(jsonStr), &tmp)
+	jsonBytes, _ := json.Marshal(tmp)
+	return string(jsonBytes)
+}
+
 // TestTags asserts that all tags are extracted from environment variables.
 func TestTags(t *testing.T) {
 	// Reset provider env key when running in CI
@@ -95,6 +102,9 @@ func TestTags(t *testing.T) {
 
 					for expectedKey, expectedValue := range tags {
 						if actualValue, ok := providerTags[expectedKey]; ok {
+							if expectedKey == "_dd.ci.env_vars" {
+								expectedValue = sortJsonKeys(expectedValue)
+							}
 							if expectedValue != actualValue {
 								if expectedValue == strings.ReplaceAll(actualValue, "\\", "/") {
 									continue
