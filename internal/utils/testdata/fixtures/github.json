@@ -13,7 +13,7 @@
       "GITHUB_WORKSPACE": "/foo/bar"
     },
     {
-      "_dd.ci.env_vars": "{\"GITHUB_REPOSITORY\":\"ghactions-repo\",\"GITHUB_RUN_ID\":\"ghactions-pipeline-id\",\"GITHUB_SERVER_URL\":\"https://ghenterprise.com\"}",
+      "_dd.ci.env_vars": "{\"GITHUB_REPOSITORY\":\"ghactions-repo\",\"GITHUB_SERVER_URL\":\"https://ghenterprise.com\",\"GITHUB_RUN_ID\":\"ghactions-pipeline-id\"}",
       "ci.job.name": "github-job-name",
       "ci.job.url": "https://ghenterprise.com/ghactions-repo/commit/ghactions-commit/checks",
       "ci.pipeline.id": "ghactions-pipeline-id",
