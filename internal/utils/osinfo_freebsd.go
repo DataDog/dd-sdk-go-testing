@@ -7,15 +7,10 @@ package utils
 
 import (
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 )
-
-func OSName() string {
-	return runtime.GOOS
-}
 
 func OSVersion() string {
 	out, err := exec.Command("uname", "-r").Output()

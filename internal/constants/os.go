@@ -8,12 +8,12 @@ package constants
 const (
 	Unknown = "unknown"
 
-	// OSPlatform indicates name of the operating system.
+	// OSPlatform indicates the operating system family (eg: linux).
 	OSPlatform = "os.platform"
 
 	// OSVersion indicates version of the operating system.
 	OSVersion = "os.version"
 
-	// OSArchitecture indicates git repository URL related to the build.
+	// OSArchitecture indicates the architecture this sdk is built for (could be 32 bit on a 64 bit system)
 	OSArchitecture = "os.architecture"
 )

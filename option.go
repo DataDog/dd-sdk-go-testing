@@ -55,7 +55,7 @@ func ensureCITags() {
 
 func ensureCITagsLocked() {
 	localTags := utils.GetProviderTags()
-	localTags[constants.OSPlatform] = utils.OSName()
+	localTags[constants.OSPlatform] = runtime.GOOS
 	localTags[constants.OSVersion] = utils.OSVersion()
 	localTags[constants.OSArchitecture] = runtime.GOARCH
 	localTags[constants.RuntimeName] = runtime.Compiler

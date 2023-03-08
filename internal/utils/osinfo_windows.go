@@ -7,16 +7,11 @@ package utils
 
 import (
 	"fmt"
-	"runtime"
 	"strings"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"golang.org/x/sys/windows/registry"
 )
-
-func OSName() string {
-	return runtime.GOOS
-}
 
 func OSVersion() string {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows NT\CurrentVersion`, registry.QUERY_VALUE)
