@@ -30,6 +30,12 @@ const (
 	// CIStageName indicates stage name.
 	CIStageName = "ci.stage.name"
 
+	// CINodeName indicates the node name.
+	CINodeName = "ci.node.name"
+
+	// CINodeLabels indicates the node labels.
+	CINodeLabels = "ci.node.labels"
+
 	// CIWorkspacePath records an absolute path to the directory where the project has been checked out.
 	CIWorkspacePath = "ci.workspace_path"
 
