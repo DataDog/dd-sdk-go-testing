@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
@@ -31,6 +32,7 @@ var providers = map[string]providerType{
 	"TEAMCITY_VERSION":   extractTeamcity,
 	"TRAVIS":             extractTravis,
 	"BITRISE_BUILD_SLUG": extractBitrise,
+	"CF_BUILD_ID":        extractCodefresh,
 }
 
 func removeEmpty(tags map[string]string) {
@@ -39,6 +41,17 @@ func removeEmpty(tags map[string]string) {
 			delete(tags, tag)
 		}
 	}
+}
+
+func getEnvVarsJson(envVars ...string) ([]byte, error) {
+	envVarsMap := make(map[string]string)
+	for _, envVar := range envVars {
+		value := os.Getenv(envVar)
+		if value != "" {
+			envVarsMap[envVar] = value
+		}
+	}
+	return json.Marshal(envVarsMap)
 }
 
 // GetProviderTags extracts CI information from environment variables.
@@ -208,13 +221,7 @@ func extractAzurePipelines() map[string]string {
 	tags[constants.GitCommitAuthorName] = os.Getenv("BUILD_REQUESTEDFORID")
 	tags[constants.GitCommitAuthorEmail] = os.Getenv("BUILD_REQUESTEDFOREMAIL")
 
-	envVarsMap := map[string]string{
-		"SYSTEM_TEAMPROJECTID": os.Getenv("SYSTEM_TEAMPROJECTID"),
-		"BUILD_BUILDID":        os.Getenv("BUILD_BUILDID"),
-		"SYSTEM_JOBID":         os.Getenv("SYSTEM_JOBID"),
-	}
-	removeEmpty(envVarsMap)
-	jsonString, err := json.Marshal(envVarsMap)
+	jsonString, err := getEnvVarsJson("SYSTEM_TEAMPROJECTID", "BUILD_BUILDID", "SYSTEM_JOBID")
 	if err == nil {
 		tags[constants.CIEnvVars] = string(jsonString)
 	}
@@ -242,7 +249,7 @@ func extractBitbucket() map[string]string {
 	tags := map[string]string{}
 	url := fmt.Sprintf("https://bitbucket.org/%s/addon/pipelines/home#!/results/%s", os.Getenv("BITBUCKET_REPO_FULL_NAME"), os.Getenv("BITBUCKET_BUILD_NUMBER"))
 	tags[constants.CIProviderName] = "bitbucket"
-	tags[constants.GitRepositoryURL] = os.Getenv("BITBUCKET_GIT_SSH_ORIGIN")
+	tags[constants.GitRepositoryURL] = firstEnv("BITBUCKET_GIT_SSH_ORIGIN", "BITBUCKET_GIT_HTTP_ORIGIN")
 	tags[constants.GitCommitSHA] = os.Getenv("BITBUCKET_COMMIT")
 	tags[constants.GitBranch] = os.Getenv("BITBUCKET_BRANCH")
 	tags[constants.GitTag] = os.Getenv("BITBUCKET_TAG")
@@ -288,15 +295,32 @@ func extractBuildkite() map[string]string {
 	tags[constants.GitCommitMessage] = os.Getenv("BUILDKITE_MESSAGE")
 	tags[constants.GitCommitAuthorName] = os.Getenv("BUILDKITE_BUILD_AUTHOR")
 	tags[constants.GitCommitAuthorEmail] = os.Getenv("BUILDKITE_BUILD_AUTHOR_EMAIL")
+	tags[constants.CINodeName] = os.Getenv("BUILDKITE_AGENT_ID")
 
-	envVarsMap := map[string]string{
-		"BUILDKITE_BUILD_ID": os.Getenv("BUILDKITE_BUILD_ID"),
-		"BUILDKITE_JOB_ID":   os.Getenv("BUILDKITE_JOB_ID"),
-	}
-	removeEmpty(envVarsMap)
-	jsonString, err := json.Marshal(envVarsMap)
+	jsonString, err := getEnvVarsJson("BUILDKITE_BUILD_ID", "BUILDKITE_JOB_ID")
 	if err == nil {
 		tags[constants.CIEnvVars] = string(jsonString)
+	}
+
+	var extraTags []string
+	envVars := os.Environ()
+	for _, envVar := range envVars {
+		if strings.HasPrefix(envVar, "BUILDKITE_AGENT_META_DATA_") {
+			envVarAsTag := envVar
+			envVarAsTag = strings.TrimPrefix(envVarAsTag, "BUILDKITE_AGENT_META_DATA_")
+			envVarAsTag = strings.ToLower(envVarAsTag)
+			envVarAsTag = strings.Replace(envVarAsTag, "=", ":", 1)
+			extraTags = append(extraTags, envVarAsTag)
+		}
+	}
+
+	if len(extraTags) != 0 {
+		// HACK: Sorting isn't actually needed, but it simplifies testing if the order is consistent
+		sort.Sort(sort.Reverse(sort.StringSlice(extraTags)))
+		jsonString, err = json.Marshal(extraTags)
+		if err == nil {
+			tags[constants.CINodeLabels] = string(jsonString)
+		}
 	}
 
 	return tags
@@ -317,12 +341,7 @@ func extractCircleCI() map[string]string {
 	tags[constants.CIJobName] = os.Getenv("CIRCLE_JOB")
 	tags[constants.CIJobURL] = os.Getenv("CIRCLE_BUILD_URL")
 
-	envVarsMap := map[string]string{
-		"CIRCLE_BUILD_NUM":   os.Getenv("CIRCLE_BUILD_NUM"),
-		"CIRCLE_WORKFLOW_ID": os.Getenv("CIRCLE_WORKFLOW_ID"),
-	}
-	removeEmpty(envVarsMap)
-	jsonString, err := json.Marshal(envVarsMap)
+	jsonString, err := getEnvVarsJson("CIRCLE_BUILD_NUM", "CIRCLE_WORKFLOW_ID")
 	if err == nil {
 		tags[constants.CIEnvVars] = string(jsonString)
 	}
@@ -370,14 +389,7 @@ func extractGithubActions() map[string]string {
 		tags[constants.CIPipelineURL] = fmt.Sprintf("%s/actions/runs/%s/attempts/%s", rawRepository, pipelineId, attempts)
 	}
 
-	envVarsMap := map[string]string{
-		"GITHUB_SERVER_URL":  os.Getenv("GITHUB_SERVER_URL"),
-		"GITHUB_REPOSITORY":  os.Getenv("GITHUB_REPOSITORY"),
-		"GITHUB_RUN_ID":      os.Getenv("GITHUB_RUN_ID"),
-		"GITHUB_RUN_ATTEMPT": os.Getenv("GITHUB_RUN_ATTEMPT"),
-	}
-	removeEmpty(envVarsMap)
-	jsonString, err := json.Marshal(envVarsMap)
+	jsonString, err := getEnvVarsJson("GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT")
 	if err == nil {
 		tags[constants.CIEnvVars] = string(jsonString)
 	}
@@ -388,8 +400,6 @@ func extractGithubActions() map[string]string {
 func extractGitlab() map[string]string {
 	tags := map[string]string{}
 	url := os.Getenv("CI_PIPELINE_URL")
-	url = string(regexp.MustCompile("/-/pipelines/").ReplaceAll([]byte(url), []byte("/pipelines/"))[:])
-	url = strings.ReplaceAll(url, "/-/pipelines/", "/pipelines/")
 
 	tags[constants.CIProviderName] = "gitlab"
 	tags[constants.GitRepositoryURL] = os.Getenv("CI_REPOSITORY_URL")
@@ -405,6 +415,8 @@ func extractGitlab() map[string]string {
 	tags[constants.CIJobName] = os.Getenv("CI_JOB_NAME")
 	tags[constants.CIStageName] = os.Getenv("CI_JOB_STAGE")
 	tags[constants.GitCommitMessage] = os.Getenv("CI_COMMIT_MESSAGE")
+	tags[constants.CINodeName] = os.Getenv("CI_RUNNER_ID")
+	tags[constants.CINodeLabels] = os.Getenv("CI_RUNNER_TAGS")
 
 	author := os.Getenv("CI_COMMIT_AUTHOR")
 	authorArray := strings.FieldsFunc(author, func(s rune) bool {
@@ -414,13 +426,7 @@ func extractGitlab() map[string]string {
 	tags[constants.GitCommitAuthorEmail] = strings.TrimSpace(authorArray[1])
 	tags[constants.GitCommitAuthorDate] = os.Getenv("CI_COMMIT_TIMESTAMP")
 
-	envVarsMap := map[string]string{
-		"CI_PROJECT_URL": os.Getenv("CI_PROJECT_URL"),
-		"CI_PIPELINE_ID": os.Getenv("CI_PIPELINE_ID"),
-		"CI_JOB_ID":      os.Getenv("CI_JOB_ID"),
-	}
-	removeEmpty(envVarsMap)
-	jsonString, err := json.Marshal(envVarsMap)
+	jsonString, err := getEnvVarsJson("CI_PROJECT_URL", "CI_PIPELINE_ID", "CI_JOB_ID")
 	if err == nil {
 		tags[constants.CIEnvVars] = string(jsonString)
 	}
@@ -457,14 +463,20 @@ func extractJenkins() map[string]string {
 	tags[constants.CIPipelineNumber] = os.Getenv("BUILD_NUMBER")
 	tags[constants.CIPipelineName] = name
 	tags[constants.CIPipelineURL] = os.Getenv("BUILD_URL")
+	tags[constants.CINodeName] = os.Getenv("NODE_NAME")
 
-	envVarsMap := map[string]string{
-		"DD_CUSTOM_TRACE_ID": os.Getenv("DD_CUSTOM_TRACE_ID"),
-	}
-	removeEmpty(envVarsMap)
-	jsonString, err := json.Marshal(envVarsMap)
+	jsonString, err := getEnvVarsJson("DD_CUSTOM_TRACE_ID")
 	if err == nil {
 		tags[constants.CIEnvVars] = string(jsonString)
+	}
+
+	nodeLabels := os.Getenv("NODE_LABELS")
+	if len(nodeLabels) > 0 {
+		labelsArray := strings.Split(nodeLabels, " ")
+		jsonString, err := json.Marshal(labelsArray)
+		if err == nil {
+			tags[constants.CINodeLabels] = string(jsonString)
+		}
 	}
 
 	return tags
@@ -473,12 +485,34 @@ func extractJenkins() map[string]string {
 func extractTeamcity() map[string]string {
 	tags := map[string]string{}
 	tags[constants.CIProviderName] = "teamcity"
-	tags[constants.GitRepositoryURL] = os.Getenv("BUILD_VCS_URL")
-	tags[constants.GitCommitSHA] = os.Getenv("BUILD_VCS_NUMBER")
-	tags[constants.CIWorkspacePath] = os.Getenv("BUILD_CHECKOUTDIR")
-	tags[constants.CIPipelineID] = os.Getenv("BUILD_ID")
-	tags[constants.CIPipelineNumber] = os.Getenv("BUILD_NUMBER")
-	tags[constants.CIPipelineURL] = fmt.Sprintf("%s/viewLog.html?buildId=%s", os.Getenv("SERVER_URL"), os.Getenv("BUILD_ID"))
+	tags[constants.CIJobURL] = os.Getenv("BUILD_URL")
+	tags[constants.CIJobName] = os.Getenv("TEAMCITY_BUILDCONF_NAME")
+	return tags
+}
+
+func extractCodefresh() map[string]string {
+	tags := map[string]string{}
+	tags[constants.CIProviderName] = "codefresh"
+	tags[constants.CIPipelineID] = os.Getenv("CF_BUILD_ID")
+	tags[constants.CIPipelineName] = os.Getenv("CF_PIPELINE_NAME")
+	tags[constants.CIPipelineURL] = os.Getenv("CF_BUILD_URL")
+	tags[constants.CIJobName] = os.Getenv("CF_STEP_NAME")
+
+	jsonString, err := getEnvVarsJson("CF_BUILD_ID")
+	if err == nil {
+		tags[constants.CIEnvVars] = string(jsonString)
+	}
+
+	cfBranch := os.Getenv("CF_BRANCH")
+	isTag := strings.Contains(cfBranch, "tags/")
+	var refKey string
+	if isTag {
+		refKey = constants.GitTag
+	} else {
+		refKey = constants.GitBranch
+	}
+	tags[refKey] = normalizeRef(cfBranch)
+
 	return tags
 }
 
