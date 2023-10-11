@@ -20,19 +20,20 @@ import (
 type providerType = func() map[string]string
 
 var providers = map[string]providerType{
-	"APPVEYOR":           extractAppveyor,
-	"TF_BUILD":           extractAzurePipelines,
-	"BITBUCKET_COMMIT":   extractBitbucket,
-	"BUDDY":              extractBuddy,
-	"BUILDKITE":          extractBuildkite,
-	"CIRCLECI":           extractCircleCI,
-	"GITHUB_SHA":         extractGithubActions,
-	"GITLAB_CI":          extractGitlab,
-	"JENKINS_URL":        extractJenkins,
-	"TEAMCITY_VERSION":   extractTeamcity,
-	"TRAVIS":             extractTravis,
-	"BITRISE_BUILD_SLUG": extractBitrise,
-	"CF_BUILD_ID":        extractCodefresh,
+	"APPVEYOR":            extractAppveyor,
+	"TF_BUILD":            extractAzurePipelines,
+	"BITBUCKET_COMMIT":    extractBitbucket,
+	"BUDDY":               extractBuddy,
+	"BUILDKITE":           extractBuildkite,
+	"CIRCLECI":            extractCircleCI,
+	"GITHUB_SHA":          extractGithubActions,
+	"GITLAB_CI":           extractGitlab,
+	"JENKINS_URL":         extractJenkins,
+	"TEAMCITY_VERSION":    extractTeamcity,
+	"TRAVIS":              extractTravis,
+	"BITRISE_BUILD_SLUG":  extractBitrise,
+	"CF_BUILD_ID":         extractCodefresh,
+	"CODEBUILD_INITIATOR": extractAwsCodePipelines,
 }
 
 func removeEmpty(tags map[string]string) {
@@ -535,5 +536,18 @@ func extractTravis() map[string]string {
 	tags[constants.CIPipelineURL] = os.Getenv("TRAVIS_BUILD_WEB_URL")
 	tags[constants.CIJobURL] = os.Getenv("TRAVIS_JOB_WEB_URL")
 	tags[constants.GitCommitMessage] = os.Getenv("TRAVIS_COMMIT_MESSAGE")
+	return tags
+}
+
+func extractAwsCodePipelines() map[string]string {
+	tags := map[string]string{}
+	tags[constants.CIProviderName] = "awscodepipeline"
+	tags[constants.CIPipelineID] = os.Getenv("DD_PIPELINE_EXECUTION_ID")
+
+	jsonString, err := getEnvVarsJson("CODEBUILD_BUILD_ARN", "DD_ACTION_EXECUTION_ID", "DD_PIPELINE_EXECUTION_ID")
+	if err == nil {
+		tags[constants.CIEnvVars] = string(jsonString)
+	}
+
 	return tags
 }
