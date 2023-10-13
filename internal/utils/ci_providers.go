@@ -33,7 +33,7 @@ var providers = map[string]providerType{
 	"TRAVIS":              extractTravis,
 	"BITRISE_BUILD_SLUG":  extractBitrise,
 	"CF_BUILD_ID":         extractCodefresh,
-	"CODEBUILD_INITIATOR": extractAwsCodePipelines,
+	"CODEBUILD_INITIATOR": extractAwsCodePipeline,
 }
 
 func removeEmpty(tags map[string]string) {
@@ -539,8 +539,14 @@ func extractTravis() map[string]string {
 	return tags
 }
 
-func extractAwsCodePipelines() map[string]string {
+func extractAwsCodePipeline() map[string]string {
 	tags := map[string]string{}
+
+	if !strings.HasPrefix(os.Getenv("CODEBUILD_INITIATOR"), "codepipeline") {
+		// CODEBUILD_INITIATOR is defined but this is not a codepipeline build
+		return tags
+	}
+
 	tags[constants.CIProviderName] = "awscodepipeline"
 	tags[constants.CIPipelineID] = os.Getenv("DD_PIPELINE_EXECUTION_ID")
 
