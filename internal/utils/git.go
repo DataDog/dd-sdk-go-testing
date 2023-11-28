@@ -42,7 +42,7 @@ func LocalGetGitData() (LocalGitData, error) {
 	if err != nil {
 		return gitData, err
 	}
-	gitData.RepositoryUrl = strings.Trim(string(out), "\n")
+	gitData.RepositoryUrl = filterSensitiveInfo(strings.Trim(string(out), "\n"))
 
 	// Extract the branch name
 	out, err = exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output()
