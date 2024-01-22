@@ -22,9 +22,10 @@ var (
 )
 
 type config struct {
-	skip       int
-	spanOpts   []tracer.StartSpanOption
-	finishOpts []tracer.FinishOption
+	skip        int
+	spanOpts    []tracer.StartSpanOption
+	finishOpts  []tracer.FinishOption
+	spanCapture func(*tracer.Span)
 }
 
 // Option represents an option that can be passed to NewServeMux or WrapHandler.
@@ -115,6 +116,12 @@ func getFromCITags(key string) (string, bool) {
 func forEachCITags(itemFunc func(string, string)) {
 	for k, v := range tags {
 		itemFunc(k, v)
+	}
+}
+
+func withSpansCapture(fn func(*tracer.Span)) Option {
+	return func(cfg *config) {
+		cfg.spanCapture = fn
 	}
 }
 

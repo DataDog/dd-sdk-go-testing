@@ -73,31 +73,45 @@ func TestStatus(t *testing.T) {
 }
 
 func TestPanic(t *testing.T) {
-	mt := mocktracer.Start()
-	defer mt.Stop()
+	var span *tracer.Span
 
-	t.Run("panic", func(t *testing.T) {
+	if _, ok := tracer.GetGlobalTracer().(*tracer.NoopTracer); ok {
+		// Global tracer is set to noop by previous test. To make sure
+		// it works, we need to start the standard tracer again.
+		tracer.Start()
+	}
+
+	pf := func() {
 		defer func() {
 			// recover panic to finish the subtest successfully
 			recover()
 		}()
 
-		_, finish := StartTest(t)
+		_, finish := StartTest(
+			t,
+			withSpansCapture(func(sp *tracer.Span) {
+				span = sp
+				t.Log("span", span)
+			}),
+		)
+		// This cancel function alters the global tracer, that's why we
+		// need to capture the finished spans in the option when calling it.
+		// This is also the reason we can't use mocktracer.
 		defer finish()
 
 		panic("forced panic")
-	})
+	}
 
-	spans := mt.FinishedSpans()
-	if len(spans) != 1 {
+	pf()
+	if span == nil {
 		t.FailNow()
 	}
 
-	s := spans[0]
-	assertEqual("forced panic", s.Tag(ext.ErrorMsg).(string))
-	assertEqual("panic", s.Tag(ext.ErrorType).(string))
-	assertEqual("true", fmt.Sprint(s.Tag(ext.Error)))
-	assertNotEmpty(s.Tag(ext.ErrorStack).(string))
+	s := span.AsMap()
+	assertEqual("forced panic", s[ext.ErrorMsg].(string))
+	assertEqual("panic", s[ext.ErrorType].(string))
+	assertEqual("1", fmt.Sprint(s[ext.MapSpanError]))
+	assertNotEmpty(s[ext.ErrorStack].(string))
 }
 
 func commonEqualCheck(s *mocktracer.Span) {

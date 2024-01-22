@@ -143,6 +143,9 @@ func StartTestWithContext(ctx context.Context, tb TB, opts ...Option) (context.C
 		}
 
 		span.Finish(cfg.finishOpts...)
+		if cfg.spanCapture != nil {
+			cfg.spanCapture(span)
+		}
 
 		if r != nil {
 			tracer.Flush()
