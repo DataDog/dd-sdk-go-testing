@@ -19,8 +19,8 @@ import (
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/ext"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 )
 
 const (
@@ -143,6 +143,9 @@ func StartTestWithContext(ctx context.Context, tb TB, opts ...Option) (context.C
 		}
 
 		span.Finish(cfg.finishOpts...)
+		if cfg.spanCapture != nil {
+			cfg.spanCapture(span)
+		}
 
 		if r != nil {
 			tracer.Flush()

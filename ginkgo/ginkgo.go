@@ -7,8 +7,8 @@ import (
 
 	ddtesting "github.com/DataDog/dd-sdk-go-testing"
 	utils "github.com/DataDog/dd-sdk-go-testing/ginkgo/internal"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/onsi/ginkgo/v2"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // https://pkg.go.dev/github.com/onsi/ginkgo/v2@v2.1.6/dsl/core

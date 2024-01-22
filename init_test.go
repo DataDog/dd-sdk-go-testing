@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/ext"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/mocktracer"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 )
 
 func TestMain(m *testing.M) {
@@ -73,41 +73,55 @@ func TestStatus(t *testing.T) {
 }
 
 func TestPanic(t *testing.T) {
-	mt := mocktracer.Start()
-	defer mt.Stop()
+	var span *tracer.Span
 
-	t.Run("panic", func(t *testing.T) {
+	if _, ok := tracer.GetGlobalTracer().(*tracer.NoopTracer); ok {
+		// Global tracer is set to noop by previous test. To make sure
+		// it works, we need to start the standard tracer again.
+		tracer.Start()
+	}
+
+	pf := func() {
 		defer func() {
 			// recover panic to finish the subtest successfully
 			recover()
 		}()
 
-		_, finish := StartTest(t)
+		_, finish := StartTest(
+			t,
+			withSpansCapture(func(sp *tracer.Span) {
+				span = sp
+				t.Log("span", span)
+			}),
+		)
+		// This cancel function alters the global tracer, that's why we
+		// need to capture the finished spans in the option when calling it.
+		// This is also the reason we can't use mocktracer.
 		defer finish()
 
 		panic("forced panic")
-	})
+	}
 
-	spans := mt.FinishedSpans()
-	if len(spans) != 1 {
+	pf()
+	if span == nil {
 		t.FailNow()
 	}
 
-	s := spans[0]
-	assertEqual("forced panic", s.Tag(ext.ErrorMsg).(string))
-	assertEqual("panic", s.Tag(ext.ErrorType).(string))
-	assertEqual("true", fmt.Sprint(s.Tag(ext.Error)))
-	assertNotEmpty(s.Tag(ext.ErrorStack).(string))
+	s := span.AsMap()
+	assertEqual("forced panic", s[ext.ErrorMsg].(string))
+	assertEqual("panic", s[ext.ErrorType].(string))
+	assertEqual("1", fmt.Sprint(s[ext.MapSpanError]))
+	assertNotEmpty(s[ext.ErrorStack].(string))
 }
 
-func commonEqualCheck(s mocktracer.Span) {
+func commonEqualCheck(s *mocktracer.Span) {
 	assertEqual(constants.SpanTypeTest, s.Tag(ext.SpanType).(string))
 	assertEqual(constants.SpanTypeTest, s.Tag(constants.SpanKind).(string))
 	assertEqual(constants.TestTypeTest, s.Tag(constants.TestType).(string))
 	assertEqual(constants.CIAppTestOrigin, s.Tag(constants.Origin).(string))
 }
 
-func commonNotEmptyCheck(s mocktracer.Span) {
+func commonNotEmptyCheck(s *mocktracer.Span) {
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorDate).(string))
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorEmail).(string))
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorName).(string))

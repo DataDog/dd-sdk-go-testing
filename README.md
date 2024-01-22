@@ -87,8 +87,8 @@ import (
 	"testing"
 
 	ddtesting "github.com/DataDog/dd-sdk-go-testing"
-	ddhttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
-	ddtracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	ddhttp "github.com/DataDog/dd-trace-go/v2/contrib/net/http"
+	ddtracer "github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 )
 
 func TestMain(m *testing.M) {
@@ -127,7 +127,7 @@ func TestWithExternalCalls(t *testing.T) {
 		ctx, finish := ddtesting.StartTestWithContext(ctx, t)
 		defer finish()
 
-		span, _ := ddtracer.SpanFromContext(ctx)
+		span, _ := tracer.SpanFromContext(ctx)
 
 		customNamer := func(req *http.Request) string {
 			value := fmt.Sprintf("%s %s", req.Method, req.URL.Path)
