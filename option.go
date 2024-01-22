@@ -11,9 +11,8 @@ import (
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/ext"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 )
 
 var (
@@ -24,8 +23,8 @@ var (
 
 type config struct {
 	skip       int
-	spanOpts   []ddtrace.StartSpanOption
-	finishOpts []ddtrace.FinishOption
+	spanOpts   []tracer.StartSpanOption
+	finishOpts []tracer.FinishOption
 }
 
 // Option represents an option that can be passed to NewServeMux or WrapHandler.
@@ -34,7 +33,7 @@ type Option func(*config)
 func defaults(cfg *config) {
 	// When StartSpanWithFinish is called directly from test function.
 	cfg.skip = 1
-	cfg.spanOpts = []ddtrace.StartSpanOption{
+	cfg.spanOpts = []tracer.StartSpanOption{
 		tracer.SpanType(constants.SpanTypeTest),
 		tracer.Tag(constants.SpanKind, spanKind),
 		tracer.Tag(ext.ManualKeep, true),
@@ -46,7 +45,7 @@ func defaults(cfg *config) {
 		cfg.spanOpts = append(cfg.spanOpts, tracer.Tag(k, v))
 	})
 
-	cfg.finishOpts = []ddtrace.FinishOption{}
+	cfg.finishOpts = []tracer.FinishOption{}
 }
 
 func ensureCITags() {
@@ -119,9 +118,9 @@ func forEachCITags(itemFunc func(string, string)) {
 	}
 }
 
-// WithSpanOptions defines a set of additional ddtrace.StartSpanOption to be added
+// WithSpanOptions defines a set of additional tracer.StartSpanOption to be added
 // to spans started by the integration.
-func WithSpanOptions(opts ...ddtrace.StartSpanOption) Option {
+func WithSpanOptions(opts ...tracer.StartSpanOption) Option {
 	return func(cfg *config) {
 		cfg.spanOpts = append(cfg.spanOpts, opts...)
 	}

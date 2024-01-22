@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/ext"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/mocktracer"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 )
 
 func TestMain(m *testing.M) {
@@ -100,14 +100,14 @@ func TestPanic(t *testing.T) {
 	assertNotEmpty(s.Tag(ext.ErrorStack).(string))
 }
 
-func commonEqualCheck(s mocktracer.Span) {
+func commonEqualCheck(s *mocktracer.Span) {
 	assertEqual(constants.SpanTypeTest, s.Tag(ext.SpanType).(string))
 	assertEqual(constants.SpanTypeTest, s.Tag(constants.SpanKind).(string))
 	assertEqual(constants.TestTypeTest, s.Tag(constants.TestType).(string))
 	assertEqual(constants.CIAppTestOrigin, s.Tag(constants.Origin).(string))
 }
 
-func commonNotEmptyCheck(s mocktracer.Span) {
+func commonNotEmptyCheck(s *mocktracer.Span) {
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorDate).(string))
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorEmail).(string))
 	assertNotEmpty(s.Tag(constants.GitCommitAuthorName).(string))

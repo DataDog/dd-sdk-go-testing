@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	ddtesting "github.com/DataDog/dd-sdk-go-testing"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/dsl/reporting"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type SuiteTest struct {
