@@ -8,6 +8,7 @@ package dd_sdk_go_testing
 import (
 	"runtime"
 	"sync"
+	"testing"
 
 	"github.com/DataDog/dd-sdk-go-testing/internal/constants"
 	"github.com/DataDog/dd-sdk-go-testing/internal/utils"
@@ -23,9 +24,10 @@ var (
 )
 
 type config struct {
-	skip       int
-	spanOpts   []ddtrace.StartSpanOption
-	finishOpts []ddtrace.FinishOption
+	skip             int
+	spanOpts         []ddtrace.StartSpanOption
+	finishOpts       []ddtrace.FinishOption
+	originalTestFunc func(*testing.T)
 }
 
 // Option represents an option that can be passed to NewServeMux or WrapHandler.
@@ -34,6 +36,7 @@ type Option func(*config)
 func defaults(cfg *config) {
 	// When StartSpanWithFinish is called directly from test function.
 	cfg.skip = 1
+	cfg.originalTestFunc = nil
 	cfg.spanOpts = []ddtrace.StartSpanOption{
 		tracer.SpanType(constants.SpanTypeTest),
 		tracer.Tag(constants.SpanKind, spanKind),
@@ -139,5 +142,12 @@ func WithSkipFrames(skip int) Option {
 func WithIncrementSkipFrame() Option {
 	return func(cfg *config) {
 		cfg.skip = cfg.skip + 1
+	}
+}
+
+// WithOriginalTestFunc sets the original test function
+func WithOriginalTestFunc(f func(*testing.T)) Option {
+	return func(cfg *config) {
+		cfg.originalTestFunc = f
 	}
 }
