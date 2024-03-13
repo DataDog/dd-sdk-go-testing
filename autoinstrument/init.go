@@ -3,6 +3,7 @@ package autoinstrument
 import (
 	"context"
 	ddtesting "github.com/DataDog/dd-sdk-go-testing"
+	"os"
 	"reflect"
 	"sync"
 	"testing"
@@ -45,6 +46,10 @@ func RunM(m *testing.M) int {
 	}
 
 	return ddtesting.Run(m)
+}
+
+func RunTestMain(m *testing.M) {
+	os.Exit(RunM(m))
 }
 
 // get the pointer to the internal test array
