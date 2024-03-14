@@ -1,12 +1,11 @@
 package autoinstrument
 
 import (
-	"os"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	os.Exit(RunM(m))
+	RunTestMain(m)
 }
 
 func TestMyTest01(t *testing.T) {
