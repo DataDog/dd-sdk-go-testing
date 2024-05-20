@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
@@ -96,7 +97,13 @@ func StartTestWithContext(ctx context.Context, tb TB, opts ...Option) (context.C
 		fn(cfg)
 	}
 
-	pc, _, _, _ := runtime.Caller(cfg.skip)
+	var pc uintptr
+	if cfg.originalTestFunc == nil {
+		pc, _, _, _ = runtime.Caller(cfg.skip)
+	} else {
+		pc = reflect.Indirect(reflect.ValueOf(cfg.originalTestFunc)).Pointer()
+	}
+
 	suite, _ := utils.GetPackageAndName(pc)
 	name := tb.Name()
 	fqn := fmt.Sprintf("%s.%s", suite, name)
